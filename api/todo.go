@@ -123,7 +123,7 @@ func (server *Server) updateTodoTitle(ctx *gin.Context) {
 }
 
 type updateTodoStatusRequestBody struct {
-	Status string `json:"status" binding:"required,oneof=complete incomplete"`
+	Status string `json:"status" binding:"required,todoStatus"`
 }
 
 func (server *Server) updateTodoStatus(ctx *gin.Context) {
