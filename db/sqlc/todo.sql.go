@@ -14,7 +14,7 @@ INSERT INTO todos (
     title
 ) VALUES (
     $1
-) RETURNING id, title, status, created_at
+) RETURNING id, title, status, created_at, file_count
 `
 
 func (q *Queries) CreateTodo(ctx context.Context, title string) (Todo, error) {
@@ -25,6 +25,7 @@ func (q *Queries) CreateTodo(ctx context.Context, title string) (Todo, error) {
 		&i.Title,
 		&i.Status,
 		&i.CreatedAt,
+		&i.FileCount,
 	)
 	return i, err
 }
@@ -40,7 +41,7 @@ func (q *Queries) DeleteTodo(ctx context.Context, id int64) error {
 }
 
 const getTodo = `-- name: GetTodo :one
-SELECT id, title, status, created_at FROM todos
+SELECT id, title, status, created_at, file_count FROM todos
 WHERE id = $1 LIMIT 1
 `
 
@@ -52,12 +53,13 @@ func (q *Queries) GetTodo(ctx context.Context, id int64) (Todo, error) {
 		&i.Title,
 		&i.Status,
 		&i.CreatedAt,
+		&i.FileCount,
 	)
 	return i, err
 }
 
 const listTodos = `-- name: ListTodos :many
-SELECT id, title, status, created_at FROM todos
+SELECT id, title, status, created_at, file_count FROM todos
 ORDER BY id
 LIMIT $1
 OFFSET $2
@@ -82,6 +84,7 @@ func (q *Queries) ListTodos(ctx context.Context, arg ListTodosParams) ([]Todo, e
 			&i.Title,
 			&i.Status,
 			&i.CreatedAt,
+			&i.FileCount,
 		); err != nil {
 			return nil, err
 		}
@@ -96,11 +99,36 @@ func (q *Queries) ListTodos(ctx context.Context, arg ListTodosParams) ([]Todo, e
 	return items, nil
 }
 
+const updateTodoFileCount = `-- name: UpdateTodoFileCount :one
+UPDATE todos
+SET file_count = file_count + $2
+WHERE id = $1
+RETURNING id, title, status, created_at, file_count
+`
+
+type UpdateTodoFileCountParams struct {
+	ID        int64 `json:"id"`
+	FileCount int32 `json:"file_count"`
+}
+
+func (q *Queries) UpdateTodoFileCount(ctx context.Context, arg UpdateTodoFileCountParams) (Todo, error) {
+	row := q.db.QueryRowContext(ctx, updateTodoFileCount, arg.ID, arg.FileCount)
+	var i Todo
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Status,
+		&i.CreatedAt,
+		&i.FileCount,
+	)
+	return i, err
+}
+
 const updateTodoStatus = `-- name: UpdateTodoStatus :one
 UPDATE todos
 SET status = $2
 WHERE id = $1
-RETURNING id, title, status, created_at
+RETURNING id, title, status, created_at, file_count
 `
 
 type UpdateTodoStatusParams struct {
@@ -116,6 +144,7 @@ func (q *Queries) UpdateTodoStatus(ctx context.Context, arg UpdateTodoStatusPara
 		&i.Title,
 		&i.Status,
 		&i.CreatedAt,
+		&i.FileCount,
 	)
 	return i, err
 }
@@ -124,7 +153,7 @@ const updateTodoTitle = `-- name: UpdateTodoTitle :one
 UPDATE todos
 SET title = $2
 WHERE id = $1
-RETURNING id, title, status, created_at
+RETURNING id, title, status, created_at, file_count
 `
 
 type UpdateTodoTitleParams struct {
@@ -140,6 +169,7 @@ func (q *Queries) UpdateTodoTitle(ctx context.Context, arg UpdateTodoTitleParams
 		&i.Title,
 		&i.Status,
 		&i.CreatedAt,
+		&i.FileCount,
 	)
 	return i, err
 }

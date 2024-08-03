@@ -27,6 +27,12 @@ SET status = $2
 WHERE id = $1
 RETURNING *;
 
+-- name: UpdateTodoFileCount :one
+UPDATE todos
+SET file_count = file_count + $2
+WHERE id = $1
+RETURNING *;
+
 -- name: DeleteTodo :exec
 DELETE FROM todos
 WHERE id = $1;

@@ -9,10 +9,16 @@ import (
 )
 
 type Querier interface {
+	CreateAttachment(ctx context.Context, arg CreateAttachmentParams) (Attachment, error)
 	CreateTodo(ctx context.Context, title string) (Todo, error)
+	DeleteAttachment(ctx context.Context, id int64) error
+	DeleteAttachmentsOfTodo(ctx context.Context, todoID int64) error
 	DeleteTodo(ctx context.Context, id int64) error
+	GetAttachment(ctx context.Context, id int64) (Attachment, error)
 	GetTodo(ctx context.Context, id int64) (Todo, error)
+	ListAttachmentOfTodo(ctx context.Context, todoID int64) ([]Attachment, error)
 	ListTodos(ctx context.Context, arg ListTodosParams) ([]Todo, error)
+	UpdateTodoFileCount(ctx context.Context, arg UpdateTodoFileCountParams) (Todo, error)
 	UpdateTodoStatus(ctx context.Context, arg UpdateTodoStatusParams) (Todo, error)
 	UpdateTodoTitle(ctx context.Context, arg UpdateTodoTitleParams) (Todo, error)
 }

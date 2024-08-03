@@ -35,6 +35,21 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 	return m.recorder
 }
 
+// CreateAttachment mocks base method.
+func (m *MockStore) CreateAttachment(arg0 context.Context, arg1 db.CreateAttachmentParams) (db.Attachment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAttachment", arg0, arg1)
+	ret0, _ := ret[0].(db.Attachment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateAttachment indicates an expected call of CreateAttachment.
+func (mr *MockStoreMockRecorder) CreateAttachment(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAttachment", reflect.TypeOf((*MockStore)(nil).CreateAttachment), arg0, arg1)
+}
+
 // CreateTodo mocks base method.
 func (m *MockStore) CreateTodo(arg0 context.Context, arg1 string) (db.Todo, error) {
 	m.ctrl.T.Helper()
@@ -50,6 +65,49 @@ func (mr *MockStoreMockRecorder) CreateTodo(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTodo", reflect.TypeOf((*MockStore)(nil).CreateTodo), arg0, arg1)
 }
 
+// DeleteAttachment mocks base method.
+func (m *MockStore) DeleteAttachment(arg0 context.Context, arg1 int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAttachment", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAttachment indicates an expected call of DeleteAttachment.
+func (mr *MockStoreMockRecorder) DeleteAttachment(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAttachment", reflect.TypeOf((*MockStore)(nil).DeleteAttachment), arg0, arg1)
+}
+
+// DeleteAttachmentTx mocks base method.
+func (m *MockStore) DeleteAttachmentTx(arg0 context.Context, arg1 db.DeleteAttachmentTxParams) (db.DeleteAttachmentTxResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAttachmentTx", arg0, arg1)
+	ret0, _ := ret[0].(db.DeleteAttachmentTxResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteAttachmentTx indicates an expected call of DeleteAttachmentTx.
+func (mr *MockStoreMockRecorder) DeleteAttachmentTx(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAttachmentTx", reflect.TypeOf((*MockStore)(nil).DeleteAttachmentTx), arg0, arg1)
+}
+
+// DeleteAttachmentsOfTodo mocks base method.
+func (m *MockStore) DeleteAttachmentsOfTodo(arg0 context.Context, arg1 int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAttachmentsOfTodo", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAttachmentsOfTodo indicates an expected call of DeleteAttachmentsOfTodo.
+func (mr *MockStoreMockRecorder) DeleteAttachmentsOfTodo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAttachmentsOfTodo", reflect.TypeOf((*MockStore)(nil).DeleteAttachmentsOfTodo), arg0, arg1)
+}
+
 // DeleteTodo mocks base method.
 func (m *MockStore) DeleteTodo(arg0 context.Context, arg1 int64) error {
 	m.ctrl.T.Helper()
@@ -62,6 +120,21 @@ func (m *MockStore) DeleteTodo(arg0 context.Context, arg1 int64) error {
 func (mr *MockStoreMockRecorder) DeleteTodo(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTodo", reflect.TypeOf((*MockStore)(nil).DeleteTodo), arg0, arg1)
+}
+
+// GetAttachment mocks base method.
+func (m *MockStore) GetAttachment(arg0 context.Context, arg1 int64) (db.Attachment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAttachment", arg0, arg1)
+	ret0, _ := ret[0].(db.Attachment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAttachment indicates an expected call of GetAttachment.
+func (mr *MockStoreMockRecorder) GetAttachment(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttachment", reflect.TypeOf((*MockStore)(nil).GetAttachment), arg0, arg1)
 }
 
 // GetTodo mocks base method.
@@ -79,6 +152,21 @@ func (mr *MockStoreMockRecorder) GetTodo(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTodo", reflect.TypeOf((*MockStore)(nil).GetTodo), arg0, arg1)
 }
 
+// ListAttachmentOfTodo mocks base method.
+func (m *MockStore) ListAttachmentOfTodo(arg0 context.Context, arg1 int64) ([]db.Attachment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAttachmentOfTodo", arg0, arg1)
+	ret0, _ := ret[0].([]db.Attachment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAttachmentOfTodo indicates an expected call of ListAttachmentOfTodo.
+func (mr *MockStoreMockRecorder) ListAttachmentOfTodo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAttachmentOfTodo", reflect.TypeOf((*MockStore)(nil).ListAttachmentOfTodo), arg0, arg1)
+}
+
 // ListTodos mocks base method.
 func (m *MockStore) ListTodos(arg0 context.Context, arg1 db.ListTodosParams) ([]db.Todo, error) {
 	m.ctrl.T.Helper()
@@ -92,6 +180,21 @@ func (m *MockStore) ListTodos(arg0 context.Context, arg1 db.ListTodosParams) ([]
 func (mr *MockStoreMockRecorder) ListTodos(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTodos", reflect.TypeOf((*MockStore)(nil).ListTodos), arg0, arg1)
+}
+
+// UpdateTodoFileCount mocks base method.
+func (m *MockStore) UpdateTodoFileCount(arg0 context.Context, arg1 db.UpdateTodoFileCountParams) (db.Todo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateTodoFileCount", arg0, arg1)
+	ret0, _ := ret[0].(db.Todo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateTodoFileCount indicates an expected call of UpdateTodoFileCount.
+func (mr *MockStoreMockRecorder) UpdateTodoFileCount(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTodoFileCount", reflect.TypeOf((*MockStore)(nil).UpdateTodoFileCount), arg0, arg1)
 }
 
 // UpdateTodoStatus mocks base method.
@@ -122,4 +225,19 @@ func (m *MockStore) UpdateTodoTitle(arg0 context.Context, arg1 db.UpdateTodoTitl
 func (mr *MockStoreMockRecorder) UpdateTodoTitle(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTodoTitle", reflect.TypeOf((*MockStore)(nil).UpdateTodoTitle), arg0, arg1)
+}
+
+// UploadAttachmentTx mocks base method.
+func (m *MockStore) UploadAttachmentTx(arg0 context.Context, arg1 db.UploadAttachmentTxParams) (db.UploadAttachmentTxResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UploadAttachmentTx", arg0, arg1)
+	ret0, _ := ret[0].(db.UploadAttachmentTxResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UploadAttachmentTx indicates an expected call of UploadAttachmentTx.
+func (mr *MockStoreMockRecorder) UploadAttachmentTx(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadAttachmentTx", reflect.TypeOf((*MockStore)(nil).UploadAttachmentTx), arg0, arg1)
 }

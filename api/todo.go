@@ -25,11 +25,17 @@ func (server *Server) createTodo(ctx *gin.Context) {
 		return
 	}
 
+	err = server.storage.CreateTodoDirectory(ctx, todo.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, todo)
 }
 
 type getTodoRequest struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
+	TodoID int64 `uri:"todoId" binding:"required,min=1"`
 }
 
 func (server *Server) getTodo(ctx *gin.Context) {
@@ -39,7 +45,7 @@ func (server *Server) getTodo(ctx *gin.Context) {
 		return
 	}
 
-	todo, err := server.store.GetTodo(ctx, req.ID)
+	todo, err := server.store.GetTodo(ctx, req.TodoID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -80,7 +86,7 @@ func (server *Server) listTodo(ctx *gin.Context) {
 }
 
 type updateTodoRequestURIParams struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
+	getTodoRequest
 }
 
 type updateTodoTitleRequestBody struct {
@@ -104,7 +110,7 @@ func (server *Server) updateTodoTitle(ctx *gin.Context) {
 	}
 
 	arg := db.UpdateTodoTitleParams{
-		ID:    reqURIParams.ID,
+		ID:    reqURIParams.TodoID,
 		Title: reqBody.Title,
 	}
 
@@ -143,7 +149,7 @@ func (server *Server) updateTodoStatus(ctx *gin.Context) {
 	}
 
 	arg := db.UpdateTodoStatusParams{
-		ID:     reqURIParams.ID,
+		ID:     reqURIParams.TodoID,
 		Status: reqBody.Status,
 	}
 
@@ -162,7 +168,7 @@ func (server *Server) updateTodoStatus(ctx *gin.Context) {
 }
 
 type deleteTodoRequest struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
+	getTodoRequest
 }
 
 func (server *Server) deleteTodo(ctx *gin.Context) {
@@ -172,7 +178,13 @@ func (server *Server) deleteTodo(ctx *gin.Context) {
 		return
 	}
 
-	err := server.store.DeleteTodo(ctx, req.ID)
+	err := server.store.DeleteTodo(ctx, req.TodoID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	err = server.storage.DeleteTodoDirectory(ctx, req.TodoID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

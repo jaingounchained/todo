@@ -8,9 +8,18 @@ import (
 	"time"
 )
 
+type Attachment struct {
+	ID               int64     `json:"id"`
+	TodoID           int64     `json:"todo_id"`
+	OriginalFilename string    `json:"original_filename"`
+	StorageFilename  string    `json:"storage_filename"`
+	CreatedAt        time.Time `json:"created_at"`
+}
+
 type Todo struct {
 	ID        int64     `json:"id"`
 	Title     string    `json:"title"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
+	FileCount int32     `json:"file_count"`
 }
