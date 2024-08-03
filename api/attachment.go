@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	db "github.com/jaingounchained/todo/db/sqlc"
-	"github.com/jaingounchained/todo/util"
 )
 
 type uploadTodoAttachmentsRequest struct {
@@ -38,18 +37,14 @@ func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 	// Return error if already number of attachments capped
 	if todo.FileCount >= 5 {
 		// cannot upload more attachments
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusForbidden, errorResponse(errors.New("Cannot upload more attachments")))
 		return
 	}
 
+	// Check form data is less than maximum specified bytes
 	form, err := ctx.MultipartForm()
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	if len(form.Value) != 0 {
-		ctx.JSON(http.StatusBadRequest, errorResponse(errors.New("form should contain files, not values")))
 		return
 	}
 
@@ -78,41 +73,9 @@ func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 		}
 	}
 
-	// increment todo file count
-	arg := db.UpdateTodoFileCountParams{
-		ID:        todo.ID,
-		FileCount: int32(len(files)),
-	}
-
-	todo, err = server.store.UpdateTodoFileCount(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
+	fileContents := make(map[string][]byte)
 	for _, file := range files {
 		multiPartFile, err := file.Open()
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
-
-		fileName := filepath.Base(file.Filename)
-
-		uuid, err := util.GenerateUUID()
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
-
-		// insert attachment metadata
-		arg1 := db.CreateAttachmentParams{
-			TodoID:           todo.ID,
-			OriginalFilename: fileName,
-			StorageFilename:  uuid,
-		}
-
-		_, err = server.store.CreateAttachment(ctx, arg1)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
@@ -124,11 +87,17 @@ func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 			return
 		}
 
-		// save file
-		if err := server.storage.SaveFile(ctx, todo.ID, uuid, b); err != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
+		fileContents[filepath.Base(file.Filename)] = b
+	}
+
+	err = server.store.UploadAttachmentTx(ctx, db.UploadAttachmentTxParams{
+		Todo:         todo,
+		FileContents: fileContents,
+		Storage:      server.storage,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
 	}
 
 	ctx.JSON(http.StatusOK, nil)
@@ -171,11 +140,8 @@ func (server *Server) getTodoAttachment(ctx *gin.Context) {
 
 	// Set the Content-Type header for the response
 	ctx.Header("Content-Type", "application/octet-stream")
-
-	// Set the Content-Disposition header to instruct the client
-	// to treat the response as a file to be downloaded
+	// Set the Content-Disposition header to instruct the client to treat the response as a file to be downloaded
 	ctx.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", attachment.OriginalFilename))
-
 	// Write the content to the response body and set the response Content-Type
 	ctx.Data(http.StatusOK, "application/octet-stream", b)
 }
@@ -229,8 +195,6 @@ func (server *Server) getTodoAttachmentMetadata(ctx *gin.Context) {
 		})
 	}
 
-	fmt.Println(resp)
-
 	ctx.JSON(http.StatusOK, resp)
 }
 
@@ -262,27 +226,12 @@ func (server *Server) deleteTodoAttachment(ctx *gin.Context) {
 		return
 	}
 
-	// Decrement file count in todo table
-	arg := db.UpdateTodoFileCountParams{
-		ID:        req.TodoID,
-		FileCount: int32(-1),
-	}
-
-	todo, err := server.store.UpdateTodoFileCount(ctx, arg)
+	err = server.store.DeleteAttachmentTx(ctx, db.DeleteAttachmentTxParams{
+		TodoID:     req.TodoID,
+		Attachment: attachment,
+		Storage:    server.storage,
+	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	// Delete attachment record from attachment table
-	err = server.store.DeleteAttachment(ctx, req.AttachmentID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	// Delete file from storage
-	if err := server.storage.DeleteFile(ctx, todo.ID, attachment.StorageFilename); err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}

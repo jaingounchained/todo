@@ -19,19 +19,16 @@ func (server *Server) createTodo(ctx *gin.Context) {
 		return
 	}
 
-	todo, err := server.store.CreateTodo(ctx, req.Title)
+	result, err := server.store.CreateTodoTx(ctx, db.CreateTodoTxParams{
+		TodoTitle: req.Title,
+		Storage:   server.storage,
+	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	err = server.storage.CreateTodoDirectory(ctx, todo.ID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, todo)
+	ctx.JSON(http.StatusOK, result.Todo)
 }
 
 type getTodoRequest struct {
@@ -71,12 +68,10 @@ func (server *Server) listTodo(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.ListTodosParams{
+	todos, err := server.store.ListTodos(ctx, db.ListTodosParams{
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
-	}
-
-	todos, err := server.store.ListTodos(ctx, arg)
+	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -94,27 +89,24 @@ type updateTodoTitleRequestBody struct {
 }
 
 func (server *Server) updateTodoTitle(ctx *gin.Context) {
-	var reqURIParams updateTodoRequestURIParams
-	var reqBody updateTodoTitleRequestBody
-
 	// Bind ID
+	var reqURIParams updateTodoRequestURIParams
 	if err := ctx.ShouldBindUri(&reqURIParams); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
 	// Bind Title
+	var reqBody updateTodoTitleRequestBody
 	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	arg := db.UpdateTodoTitleParams{
+	todo, err := server.store.UpdateTodoTitle(ctx, db.UpdateTodoTitleParams{
 		ID:    reqURIParams.TodoID,
 		Title: reqBody.Title,
-	}
-
-	todo, err := server.store.UpdateTodoTitle(ctx, arg)
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -133,27 +125,24 @@ type updateTodoStatusRequestBody struct {
 }
 
 func (server *Server) updateTodoStatus(ctx *gin.Context) {
-	var reqURIParams updateTodoRequestURIParams
-	var reqBody updateTodoStatusRequestBody
-
 	// Bind ID
+	var reqURIParams updateTodoRequestURIParams
 	if err := ctx.ShouldBindUri(&reqURIParams); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
 	// Bind Title
+	var reqBody updateTodoStatusRequestBody
 	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	arg := db.UpdateTodoStatusParams{
+	todo, err := server.store.UpdateTodoStatus(ctx, db.UpdateTodoStatusParams{
 		ID:     reqURIParams.TodoID,
 		Status: reqBody.Status,
-	}
-
-	todo, err := server.store.UpdateTodoStatus(ctx, arg)
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -178,13 +167,10 @@ func (server *Server) deleteTodo(ctx *gin.Context) {
 		return
 	}
 
-	err := server.store.DeleteTodo(ctx, req.TodoID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	err = server.storage.DeleteTodoDirectory(ctx, req.TodoID)
+	err := server.store.DeleteTodoTx(ctx, db.DeleteTodoTxParams{
+		TodoID:  req.TodoID,
+		Storage: server.storage,
+	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

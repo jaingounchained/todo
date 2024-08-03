@@ -65,6 +65,21 @@ func (mr *MockStoreMockRecorder) CreateTodo(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTodo", reflect.TypeOf((*MockStore)(nil).CreateTodo), arg0, arg1)
 }
 
+// CreateTodoTx mocks base method.
+func (m *MockStore) CreateTodoTx(arg0 context.Context, arg1 db.CreateTodoTxParams) (db.CreateTodoTxResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateTodoTx", arg0, arg1)
+	ret0, _ := ret[0].(db.CreateTodoTxResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateTodoTx indicates an expected call of CreateTodoTx.
+func (mr *MockStoreMockRecorder) CreateTodoTx(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTodoTx", reflect.TypeOf((*MockStore)(nil).CreateTodoTx), arg0, arg1)
+}
+
 // DeleteAttachment mocks base method.
 func (m *MockStore) DeleteAttachment(arg0 context.Context, arg1 int64) error {
 	m.ctrl.T.Helper()
@@ -77,21 +92,6 @@ func (m *MockStore) DeleteAttachment(arg0 context.Context, arg1 int64) error {
 func (mr *MockStoreMockRecorder) DeleteAttachment(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAttachment", reflect.TypeOf((*MockStore)(nil).DeleteAttachment), arg0, arg1)
-}
-
-// DeleteAttachmentTx mocks base method.
-func (m *MockStore) DeleteAttachmentTx(arg0 context.Context, arg1 db.DeleteAttachmentTxParams) (db.DeleteAttachmentTxResult, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteAttachmentTx", arg0, arg1)
-	ret0, _ := ret[0].(db.DeleteAttachmentTxResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// DeleteAttachmentTx indicates an expected call of DeleteAttachmentTx.
-func (mr *MockStoreMockRecorder) DeleteAttachmentTx(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAttachmentTx", reflect.TypeOf((*MockStore)(nil).DeleteAttachmentTx), arg0, arg1)
 }
 
 // DeleteAttachmentsOfTodo mocks base method.

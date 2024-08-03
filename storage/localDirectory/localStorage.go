@@ -10,7 +10,7 @@ type LocalStorage struct {
 }
 
 func New(directoryPath string) (*LocalStorage, error) {
-	if stat, err := os.Stat(directoryPath); err != nil || !stat.IsDir() {
+	if _, err := os.Stat(directoryPath); os.IsNotExist(err) {
 		return nil, errors.New("Directory now present")
 	}
 
