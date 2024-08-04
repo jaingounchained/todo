@@ -2,7 +2,8 @@ package storage
 
 import (
 	"errors"
-	"os"
+
+	"github.com/jaingounchained/todo/util"
 )
 
 type LocalStorage struct {
@@ -10,8 +11,8 @@ type LocalStorage struct {
 }
 
 func New(directoryPath string) (*LocalStorage, error) {
-	if _, err := os.Stat(directoryPath); os.IsNotExist(err) {
-		return nil, errors.New("Directory now present")
+	if !util.DirExists(directoryPath) {
+		return nil, errors.New("Directory doesn't exist")
 	}
 
 	return &LocalStorage{

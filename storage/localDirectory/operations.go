@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	storage "github.com/jaingounchained/todo/storage"
 	"os"
 	"path/filepath"
+
+	storage "github.com/jaingounchained/todo/storage"
+	"github.com/jaingounchained/todo/util"
 )
 
 func (storage *LocalStorage) CreateTodoDirectory(ctx context.Context, todoID int64) error {
 	todoDirectory := storage.todoAbsoluteDirectory(todoID)
-	fmt.Println(todoDirectory)
-	if _, err := os.Stat(todoDirectory); os.IsExist(err) {
-		return errors.New("Directory already present")
+	if util.DirExists(todoDirectory) {
+		return errors.New("Directory already exist")
 	}
 
 	return os.Mkdir(todoDirectory, 0755)
@@ -21,42 +22,63 @@ func (storage *LocalStorage) CreateTodoDirectory(ctx context.Context, todoID int
 
 func (storage *LocalStorage) DeleteTodoDirectory(ctx context.Context, todoID int64) error {
 	todoDirectory := storage.todoAbsoluteDirectory(todoID)
+	if !util.DirExists(todoDirectory) {
+		return errors.New("Directory doesn't exist")
+	}
 
 	return os.RemoveAll(todoDirectory)
 }
 
 func (storage *LocalStorage) SaveFile(ctx context.Context, todoID int64, fileName string, byte []byte) error {
-	todoFilePath := storage.todoFilePath(todoID, fileName)
+	todoDirectory := storage.todoAbsoluteDirectory(todoID)
+	if !util.DirExists(todoDirectory) {
+		return errors.New("Directory doesn't exist")
+	}
+
+	todoFilePath := filepath.Join(todoDirectory, fileName)
+	if util.FileExists(todoFilePath) {
+		return errors.New("File already present")
+	}
 
 	return os.WriteFile(todoFilePath, byte, 0644)
 }
 
 func (storage *LocalStorage) DeleteFile(ctx context.Context, todoID int64, fileName string) error {
-	todoFilePath := storage.todoFilePath(todoID, fileName)
+	todoDirectory := storage.todoAbsoluteDirectory(todoID)
+	if !util.DirExists(todoDirectory) {
+		return errors.New("Directory doesn't exist")
+	}
+
+	todoFilePath := filepath.Join(todoDirectory, fileName)
+	if !util.FileExists(todoFilePath) {
+		return errors.New("File not present")
+	}
 
 	return os.Remove(todoFilePath)
 }
 
+// TODO: Optimize this function, pass in a byte array instead of returning
 func (storage *LocalStorage) GetFileContents(ctx context.Context, todoID int64, fileName string) ([]byte, error) {
-	todoFilePath := filepath.Join(storage.directoryPath, todoDirectoryName(todoID), fileName)
+	todoDirectory := storage.todoAbsoluteDirectory(todoID)
+	if !util.DirExists(todoDirectory) {
+		return nil, errors.New("Directory doesn't exist")
+	}
+
+	todoFilePath := filepath.Join(todoDirectory, fileName)
+	if !util.FileExists(todoFilePath) {
+		return nil, errors.New("File not present")
+	}
 
 	return os.ReadFile(todoFilePath)
 }
 
-func (storage *LocalStorage) todoAbsoluteDirectory(todoID int64) string {
-	return filepath.Join(storage.directoryPath, todoDirectoryName(todoID))
-}
-
-func (storage *LocalStorage) todoFilePath(todoID int64, fileName string) string {
-	return filepath.Join(storage.todoAbsoluteDirectory(todoID), fileName)
-}
-
-func todoDirectoryName(todoID int64) string {
-	return fmt.Sprintf("%08d", todoID)
-}
-
 // TODO: optimize this function
 func (storage *LocalStorage) SaveMultipleFilesSafely(ctx context.Context, todoID int64, fileContents storage.FileContents) error {
+	todoDirectory := storage.todoAbsoluteDirectory(todoID)
+	if !util.DirExists(todoDirectory) {
+		return errors.New("Directory doesn't exist")
+	}
+
 	// Temporary file storage
 	tempFiles := make([]*os.File, len(fileContents))
 	fileNames := make([]string, 0, len(fileContents))
@@ -64,7 +86,7 @@ func (storage *LocalStorage) SaveMultipleFilesSafely(ctx context.Context, todoID
 	// Create and write to temporary files
 	i := 0
 	for name, data := range fileContents {
-		tempFile, err := os.CreateTemp("temp", "example")
+		tempFile, err := os.CreateTemp("", "example")
 		if err != nil {
 			cleanup(tempFiles)
 			fmt.Printf("Failed to create temp file for %s: %v\n", name, err)
@@ -78,7 +100,7 @@ func (storage *LocalStorage) SaveMultipleFilesSafely(ctx context.Context, todoID
 		}
 
 		tempFiles[i] = tempFile
-		fileNames = append(fileNames, storage.todoFilePath(todoID, name))
+		fileNames = append(fileNames, filepath.Join(todoDirectory, name))
 		i++
 	}
 
@@ -114,4 +136,12 @@ func revertRenames(tempFiles []*os.File, fileNames []string) {
 			}
 		}
 	}
+}
+
+func (storage *LocalStorage) todoAbsoluteDirectory(todoID int64) string {
+	return filepath.Join(storage.directoryPath, todoDirectoryName(todoID))
+}
+
+func todoDirectoryName(todoID int64) string {
+	return fmt.Sprintf("%08d", todoID)
 }
