@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - data-volume:/var/lib/postgresql/data
+      - data-volume1:/var/lib/postgresql/data
     networks:
       - todo-network
   api:
@@ -19,6 +19,7 @@ services:
     ports:
       - "8080:8080"
     environment:
+      - GIN_MODE=release
       - DB_SOURCE=postgresql://root:secret@postgres:5432/todos?sslmode=disable
     depends_on:
       - postgres
@@ -35,6 +36,6 @@ services:
     networks:
       - todo-network
 volumes:
-  data-volume:
+  data-volume1:
 networks:
   todo-network:
