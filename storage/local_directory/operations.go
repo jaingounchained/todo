@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -107,7 +108,7 @@ func (storage *LocalStorage) SaveMultipleFilesSafely(ctx context.Context, todoID
 	// Rename all temporary files to final names
 	for i, tempFile := range tempFiles {
 		finalName := fileNames[i]
-		if err := os.Rename(tempFile.Name(), finalName); err != nil {
+		if err := moveFile(tempFile.Name(), finalName); err != nil {
 			fmt.Printf("Failed to rename temp file to %s: %v\n", finalName, err)
 			revertRenames(tempFiles, fileNames)
 			cleanup(tempFiles)
@@ -136,6 +137,26 @@ func revertRenames(tempFiles []*os.File, fileNames []string) {
 			}
 		}
 	}
+}
+
+func moveFile(src, dst string) error {
+	inputFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer inputFile.Close()
+
+	outputFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer outputFile.Close()
+
+	if _, err := io.Copy(outputFile, inputFile); err != nil {
+		return err
+	}
+
+	return os.Remove(src)
 }
 
 func (storage *LocalStorage) todoAbsoluteDirectory(todoID int64) string {
