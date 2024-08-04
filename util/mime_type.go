@@ -3,16 +3,16 @@ package util
 import "strings"
 
 const (
-	textPlain      = "text/plain"
-	applicationPdf = "application/pdf"
-	imageJpeg      = "image/jpeg"
-	imageJpg       = "image/jpg"
-	imagePng       = "image/png"
+	TextPlain      = "text/plain"
+	ApplicationPDF = "application/pdf"
+	ImageJPEG      = "image/jpeg"
+	ImageJPG       = "image/jpg"
+	ImagePNG       = "image/png"
 )
 
 func IsSupportedMimeType(mimeType string) bool {
 	switch strings.ToLower(mimeType) {
-	case textPlain, applicationPdf, imageJpeg, imageJpg, imagePng:
+	case TextPlain, ApplicationPDF, ImageJPEG, ImageJPG, ImagePNG:
 		return true
 	}
 

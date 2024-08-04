@@ -8,7 +8,7 @@ import (
 
 	"github.com/jaingounchained/todo/api"
 	db "github.com/jaingounchained/todo/db/sqlc"
-	storage "github.com/jaingounchained/todo/storage/localDirectory"
+	storage "github.com/jaingounchained/todo/storage/local_directory"
 	"github.com/jaingounchained/todo/util"
 	_ "github.com/lib/pq"
 )

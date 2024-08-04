@@ -30,6 +30,7 @@ func (store *SQLStore) UploadAttachmentTx(ctx context.Context, arg UploadAttachm
 			return err
 		}
 
+		// TODO: Reduce DB calls by inserting attachment metadata in bulk
 		// Insert attachment metadata
 		StorageFileNameToBytesMap := make(map[string][]byte)
 		for fileName := range arg.FileContents {

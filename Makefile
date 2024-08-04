@@ -19,6 +19,9 @@ migratedown:
 migratedown1:
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/todos?sslmode=disable" -verbose down 1
 
+clearlocalteststorage:
+	rm -rf ./uploads/
+
 sqlc:
 	sqlc generate
 
@@ -28,7 +31,10 @@ test:
 server:
 	go run main.go
 
-mock:
+mocksql:
 	mockgen -package mockdb -destination db/mock/store.go github.com/jaingounchained/todo/db/sqlc Store
 
-.PHONY: postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc server mock
+mockstorage:
+	mockgen -package mockStorage -destination storage/mock/storage.go github.com/jaingounchained/todo/storage Storage
+
+.PHONY: postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc server mocksql mockstorage clearlocalteststorage

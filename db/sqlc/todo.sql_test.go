@@ -13,7 +13,7 @@ import (
 func createRandomTodo(t *testing.T) Todo {
 	title := util.RandomString(10)
 
-	todo, err := testQueries.CreateTodo(context.Background(), title)
+	todo, err := testStore.CreateTodo(context.Background(), title)
 	require.NoError(t, err)
 	require.NotEmpty(t, todo)
 
@@ -41,7 +41,7 @@ func TestCreateTodo(t *testing.T) {
 
 func TestGetTodo(t *testing.T) {
 	todo1 := createRandomTodo(t)
-	todo2, err := testQueries.GetTodo(context.Background(), todo1.ID)
+	todo2, err := testStore.GetTodo(context.Background(), todo1.ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, todo2)
 
@@ -57,7 +57,7 @@ func TestUpdateTodoTitle(t *testing.T) {
 		Title: updatedTitle,
 	}
 
-	todo2, err := testQueries.UpdateTodoTitle(context.Background(), arg)
+	todo2, err := testStore.UpdateTodoTitle(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, todo2)
 
@@ -74,7 +74,7 @@ func TestUpdateTodoStatus(t *testing.T) {
 		Status: updatedStatus,
 	}
 
-	todo2, err := testQueries.UpdateTodoStatus(context.Background(), arg)
+	todo2, err := testStore.UpdateTodoStatus(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, todo2)
 
@@ -91,7 +91,7 @@ func TestUpdateTodoFileCount(t *testing.T) {
 		FileCount: updatedFileCount,
 	}
 
-	todo2, err := testQueries.UpdateTodoFileCount(context.Background(), arg)
+	todo2, err := testStore.UpdateTodoFileCount(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, todo2)
 
@@ -101,10 +101,10 @@ func TestUpdateTodoFileCount(t *testing.T) {
 
 func TestDeleteTodo(t *testing.T) {
 	todo1 := createRandomTodo(t)
-	err := testQueries.DeleteTodo(context.Background(), todo1.ID)
+	err := testStore.DeleteTodo(context.Background(), todo1.ID)
 	require.NoError(t, err)
 
-	todo2, err := testQueries.GetTodo(context.Background(), todo1.ID)
+	todo2, err := testStore.GetTodo(context.Background(), todo1.ID)
 	require.Error(t, err)
 	require.EqualError(t, err, sql.ErrNoRows.Error())
 	require.Empty(t, todo2)
@@ -120,7 +120,7 @@ func TestListTodos(t *testing.T) {
 		Offset: 5,
 	}
 
-	todos, err := testQueries.ListTodos(context.Background(), arg)
+	todos, err := testStore.ListTodos(context.Background(), arg)
 	require.NoError(t, err)
 	require.Len(t, todos, 5)
 

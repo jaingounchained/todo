@@ -11,6 +11,11 @@ import (
 	db "github.com/jaingounchained/todo/db/sqlc"
 )
 
+const (
+	MaxContentLength          = 10 << 20
+	UploadAttachmentFieldName = "attachments"
+)
+
 type uploadTodoAttachmentsRequest struct {
 	getTodoRequest
 }
@@ -42,13 +47,18 @@ func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 	}
 
 	// Check form data is less than maximum specified bytes
-	form, err := ctx.MultipartForm()
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+	if ctx.Request.ContentLength > MaxContentLength {
+		ctx.JSON(http.StatusRequestEntityTooLarge, errorResponse(errors.New("Request body more than 10 MBs")))
 		return
 	}
 
-	files, ok := form.File["attachments"]
+	form, err := ctx.MultipartForm()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	files, ok := form.File[UploadAttachmentFieldName]
 	if !ok {
 		ctx.JSON(http.StatusBadRequest, errorResponse(errors.New("no file present in 'attachments' key")))
 		return
