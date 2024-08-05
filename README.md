@@ -23,8 +23,6 @@ It also enables attachments associated with each todo.
 git clone https://github.com/jaingounachained/todo.git
 
 cd todo
-
-go mod tidy
 ```
 
 ### 2. Start the server:
@@ -33,7 +31,7 @@ go mod tidy
 docker compose up --build
 ```
 
-### 3. Shutting down the server:
+### 3. Shut down the server:
 
 ```sh
 docker compose down
@@ -61,35 +59,34 @@ curl -X 'POST' \
 ### 3. Retrieve all todos
 
 ```sh
-curl http://localhost:8080/todos
+curl http://localhost:8080/todos?page_id=1&page_size=5
 ```
 
 **Note**: openAPI spec is accessible via `http://localhost:8080/docs/index.html` after starting the app
 
 ## Running tests
 
-### 1. Start a postgres docker container/local server
+Tests are automatically ran using github actions on pushed directly to main branch pull request is created on main branch
+
+### Running tests in local
+
+Pre-requisite: golang-migrate
 
 ```sh
-make postgres
-```
-
-### 2. Create relevant databases  in the postgres container
-
-```sh
-make migrate
-```
-
-### 3. Make uploads directory
-
-```sh
+# Start postgres container
+make postgresstart
+# Create todos db
+make createdb
+# Create relevant databases in todos db
+make migrateup
+# Create local storage for test
 make createlocalteststorage
-```
-
-#### 4. Run tests
-
-```sh
+# Run test
 make test
+# Delete postgrescontainer
+make postgresstop
+# Delete local test storage
+make clearlocalteststorage
 ```
 
 ## Technologies Used
@@ -98,7 +95,7 @@ make test
 - postgreSQL: SQL engine
 - gin framework: HTTP server
 - sqlc: Generating go code for the sql queries
-- make: Automating scripts
-- migrate: Creating and deleting sql tables
-- docker: containerization
+- make: Important commands documentation
+- migrate: Database setup/migration utility
+- docker: Containerization
 - openAPI/Swagger: API documentation
