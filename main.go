@@ -25,9 +25,7 @@ import (
 // @title     Todo API
 // @version         1.0
 // @description     A todo management service API in GO which supports attachments
-
 // @contact.name   Bhavya Jain
-
 // @host      localhost:8080
 // @BasePath  /
 func main() {

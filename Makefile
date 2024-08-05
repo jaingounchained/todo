@@ -3,8 +3,11 @@ DB_URL=postgresql://root:secret@localhost:5432/todos?sslmode=disable
 network:
 	docker network create todo-network
 
-postgres:
-	docker run --name postgres --network todo-network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:14-alpine
+postgresstart:
+	docker run --rm --name postgres -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:14-alpine
+
+postgresstop:
+	docker stop postgres
 
 createdb:
 	docker exec -it postgres createdb --username=root --owner=root todos
@@ -28,7 +31,7 @@ createlocalteststorage:
 	mkdir uploads
 
 clearlocalteststorage:
-	rm -rf ./uploads/
+	rm -rf uploads
 
 sqlc:
 	sqlc generate
@@ -51,4 +54,4 @@ dockerbuild:
 openapispec:
 	swag init
 
-.PHONY: network postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc server mocksql mockstorage clearlocalteststorage dockerbuild openapispec createlocalteststorage
+.PHONY: network postgresstart postgresstop createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc server mocksql mockstorage clearlocalteststorage dockerbuild openapispec createlocalteststorage
