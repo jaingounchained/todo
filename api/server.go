@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
@@ -15,8 +17,8 @@ type Server struct {
 	router  *gin.Engine
 }
 
-// NewServer creates a new HTTP server and setup routing
-func NewServer(store db.Store, storage storage.Storage) *Server {
+// NewGinHandler creates a new HTTP server and setup routing
+func NewGinHandler(store db.Store, storage storage.Storage) *Server {
 	server := &Server{
 		store:   store,
 		storage: storage,
@@ -81,12 +83,9 @@ func (server *Server) setupDeleteResourceRouters(router *gin.Engine) {
 }
 
 // Start runs the HTTP server on a specific address
-func (server *Server) Start(address string) error {
-	return server.router.Run(address)
-}
-
-func errorResponse(err error) gin.H {
-	return gin.H{
-		"error": err.Error(),
+func (server *Server) HttpServer(address string) *http.Server {
+	return &http.Server{
+		Addr:    address,
+		Handler: server.router,
 	}
 }
