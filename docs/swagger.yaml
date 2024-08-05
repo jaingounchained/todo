@@ -17,6 +17,15 @@ definitions:
     required:
     - title
     type: object
+  api.getTodoAttachmentMetadataResponse:
+    properties:
+      filename:
+        type: string
+      id:
+        type: integer
+      todo_id:
+        type: integer
+    type: object
   api.updateTodoStatusRequestBody:
     properties:
       status:
@@ -198,6 +207,178 @@ paths:
       summary: Returns a Todo
       tags:
       - todos
+  /todos/{id}/attachments:
+    get:
+      consumes:
+      - application/json
+      description: Get attachment metadata for the corresponding todo
+      parameters:
+      - description: Todo ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.getTodoAttachmentMetadataResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+      summary: Get attachments metadata
+      tags:
+      - attachments
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload attachments for the corresponding todo
+      parameters:
+      - description: Todo ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - collectionFormat: csv
+        description: attachments
+        in: formData
+        items:
+          type: file
+        name: attachments
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "403":
+          description: < 5 attachments allowed per todo
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "413":
+          description: < 2 MB per file
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "415":
+          description: unsuppoerted attachment
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+      summary: Upload attachments
+      tags:
+      - attachments
+  /todos/{id}/attachments/{attachmentId}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete attachment for the corresponding todo
+      parameters:
+      - description: Todo ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: attachment ID
+        in: path
+        minimum: 1
+        name: attachmentId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+      summary: Delete attachment
+      tags:
+      - attachments
+    get:
+      consumes:
+      - application/json
+      description: Get attachment for the corresponding todo
+      parameters:
+      - description: Todo ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: attachment ID
+        in: path
+        minimum: 1
+        name: attachmentId
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+      summary: Get attachments
+      tags:
+      - attachments
   /todos/{id}/status:
     post:
       consumes:

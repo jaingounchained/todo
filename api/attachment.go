@@ -20,6 +20,23 @@ type uploadTodoAttachmentsRequest struct {
 	getTodoRequest
 }
 
+// uploadTodoAttachments godoc
+//
+//	@Summary		Upload attachments
+//	@Description	Upload attachments for the corresponding todo
+//	@Tags			attachments
+//	@Accept			multipart/form-data
+//	@Produce		json
+//	@Param			id	path		int	true	"Todo ID"          minimum(1)
+//	@Param			attachments	formData	[]file	true	"attachments"
+//	@Success		200		{object}	nil
+//	@Failure		403		{object}	HTTPError "< 5 attachments allowed per todo"
+//	@Failure		413		{object}	HTTPError "< 2 MB per file"
+//	@Failure		415		{object}	HTTPError "unsuppoerted attachment"
+//	@Failure		404		{object}	HTTPError
+//	@Failure		400		{object}	HTTPError
+//	@Failure		500		{object}	HTTPError
+//	@Router			/todos/{id}/attachments [post]
 func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 	// Extract todo
 	var req uploadTodoAttachmentsRequest
@@ -118,6 +135,21 @@ type getTodoAttachmentRequest struct {
 	AttachmentID int64 `uri:"attachmentId" binding:"required,min=1"`
 }
 
+// getTodoAttachment godoc
+//
+//	@Summary		Get attachments
+//	@Description	Get attachment for the corresponding todo
+//	@Tags			attachments
+//	@Accept			json
+//	@Produce		application/octet-stream
+//	@Param			id	path		int	true	"Todo ID"          minimum(1)
+//	@Param			attachmentId	path		int	true	"attachment ID"          minimum(1)
+//	@Success		200		{object}	nil
+//	@Failure		403		{object}	HTTPError
+//	@Failure		404		{object}	HTTPError
+//	@Failure		400		{object}	HTTPError
+//	@Failure		500		{object}	HTTPError
+//	@Router			/todos/{id}/attachments/{attachmentId} [get]
 func (server *Server) getTodoAttachment(ctx *gin.Context) {
 	var req getTodoAttachmentRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -166,6 +198,20 @@ type getTodoAttachmentMetadataResponse struct {
 	Filename string `json:"filename"`
 }
 
+// getTodoAttachmentMetadata godoc
+//
+//	@Summary		Get attachments metadata
+//	@Description	Get attachment metadata for the corresponding todo
+//	@Tags			attachments
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Todo ID"          minimum(1)
+//	@Success		200		{object}	getTodoAttachmentMetadataResponse
+//	@Failure		403		{object}	HTTPError
+//	@Failure		404		{object}	HTTPError
+//	@Failure		400		{object}	HTTPError
+//	@Failure		500		{object}	HTTPError
+//	@Router			/todos/{id}/attachments [get]
 func (server *Server) getTodoAttachmentMetadata(ctx *gin.Context) {
 	var req getTodoAttachmentMetadataRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -213,6 +259,21 @@ type deleteTodoAttachmentRequest struct {
 	AttachmentID int64 `uri:"attachmentId" binding:"required,min=1"`
 }
 
+// deleteTodoAttachment godoc
+//
+//	@Summary		Delete attachment
+//	@Description	Delete attachment for the corresponding todo
+//	@Tags			attachments
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Todo ID"          minimum(1)
+//	@Param			attachmentId	path		int	true	"attachment ID"          minimum(1)
+//	@Success		200		{object}	nil
+//	@Failure		413		{object}	HTTPError
+//	@Failure		404		{object}	HTTPError
+//	@Failure		400		{object}	HTTPError
+//	@Failure		500		{object}	HTTPError
+//	@Router			/todos/{id}/attachments/{attachmentId} [delete]
 func (server *Server) deleteTodoAttachment(ctx *gin.Context) {
 	var req deleteTodoAttachmentRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
