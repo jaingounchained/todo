@@ -37,7 +37,13 @@ func NewGinHandler(store db.Store, storage storage.Storage, l *zap.Logger) *Serv
 
 func (server *Server) setupRouter(l *zap.Logger) {
 	router := gin.New()
-	router.Use(logger(l))
+	gin.Default()
+
+	if l == nil {
+		router.Use(gin.Logger())
+	} else {
+		router.Use(logger(l))
+	}
 
 	// health check router
 	router.GET("/health", server.health)

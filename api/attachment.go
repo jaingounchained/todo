@@ -24,61 +24,61 @@ func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 	// Extract todo
 	var req uploadTodoAttachmentsRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	todo, err := server.store.GetTodo(ctx, req.TodoID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
 	// Return error if already number of attachments capped
 	if todo.FileCount >= 5 {
 		// cannot upload more attachments
-		ctx.JSON(http.StatusForbidden, errorResponse(errors.New("Cannot upload more attachments")))
+		NewError(ctx, http.StatusForbidden, errors.New("Cannot upload more attachments"))
 		return
 	}
 
 	// Check form data is less than maximum specified bytes
 	if ctx.Request.ContentLength > MaxContentLength {
-		ctx.JSON(http.StatusRequestEntityTooLarge, errorResponse(errors.New("Request body more than 10 MBs")))
+		NewError(ctx, http.StatusRequestEntityTooLarge, errors.New("Request body more than 10 MBs"))
 		return
 	}
 
 	form, err := ctx.MultipartForm()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
 	files, ok := form.File[UploadAttachmentFieldName]
 	if !ok {
-		ctx.JSON(http.StatusBadRequest, errorResponse(errors.New("no file present in 'attachments' key")))
+		NewError(ctx, http.StatusBadRequest, errors.New("no file present in 'attachments' key"))
 		return
 	}
 
 	// Validate length of files; should be less than 5 - todo's already uploaded items
 	if len(files)+int(todo.FileCount) > 5 {
-		ctx.JSON(http.StatusRequestEntityTooLarge, errorResponse(errors.New("Not allowed to upload more than 5 files, already present x files")))
+		NewError(ctx, http.StatusRequestEntityTooLarge, errors.New("Not allowed to upload more than 5 files, already present x files"))
 		return
 	}
 
 	// validate individual file type
 	for _, file := range files {
 		if err := validateMimeType(file.Header); err != nil {
-			ctx.JSON(http.StatusUnsupportedMediaType, errorResponse(err))
+			NewError(ctx, http.StatusUnsupportedMediaType, err)
 			return
 		}
 
 		if err := validateFileSize(file.Size); err != nil {
-			ctx.JSON(http.StatusRequestEntityTooLarge, errorResponse(errors.New("Large file")))
+			NewError(ctx, http.StatusRequestEntityTooLarge, errors.New("Large file"))
 			return
 		}
 	}
@@ -87,13 +87,13 @@ func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 	for _, file := range files {
 		multiPartFile, err := file.Open()
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			NewError(ctx, http.StatusInternalServerError, err)
 			return
 		}
 
 		b := make([]byte, file.Size)
 		if _, err = multiPartFile.Read(b); err != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			NewError(ctx, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -106,7 +106,7 @@ func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 		Storage:      server.storage,
 	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -121,7 +121,7 @@ type getTodoAttachmentRequest struct {
 func (server *Server) getTodoAttachment(ctx *gin.Context) {
 	var req getTodoAttachmentRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -129,22 +129,22 @@ func (server *Server) getTodoAttachment(ctx *gin.Context) {
 	attachment, err := server.store.GetAttachment(ctx, req.AttachmentID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
 	if attachment.TodoID != req.TodoID {
-		ctx.JSON(http.StatusForbidden, errorResponse(errors.New("attachment doesn't belong to todo")))
+		NewError(ctx, http.StatusForbidden, errors.New("attachment doesn't belong to todo"))
 		return
 	}
 
 	b, err := server.storage.GetFileContents(ctx, req.TodoID, attachment.StorageFilename)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -169,18 +169,18 @@ type getTodoAttachmentMetadataResponse struct {
 func (server *Server) getTodoAttachmentMetadata(ctx *gin.Context) {
 	var req getTodoAttachmentMetadataRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	_, err := server.store.GetTodo(ctx, req.TodoID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -188,11 +188,11 @@ func (server *Server) getTodoAttachmentMetadata(ctx *gin.Context) {
 	attachments, err := server.store.ListAttachmentOfTodo(ctx, req.TodoID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -216,23 +216,23 @@ type deleteTodoAttachmentRequest struct {
 func (server *Server) deleteTodoAttachment(ctx *gin.Context) {
 	var req deleteTodoAttachmentRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	attachment, err := server.store.GetAttachment(ctx, req.AttachmentID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
 	if attachment.TodoID != req.TodoID {
-		ctx.JSON(http.StatusForbidden, errorResponse(errors.New("attachment doesn't belong to todo")))
+		NewError(ctx, http.StatusForbidden, errors.New("attachment doesn't belong to todo"))
 		return
 	}
 
@@ -242,7 +242,7 @@ func (server *Server) deleteTodoAttachment(ctx *gin.Context) {
 		Storage:    server.storage,
 	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 

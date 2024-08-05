@@ -6,8 +6,15 @@ const (
 	errorJSONKey = "error"
 )
 
-func errorResponse(err error) gin.H {
-	return gin.H{
-		errorJSONKey: err.Error(),
+func NewError(ctx *gin.Context, status int, err error) {
+	er := HTTPError{
+		Code:  status,
+		Error: err.Error(),
 	}
+	ctx.JSON(status, er)
+}
+
+type HTTPError struct {
+	Code  int    `json:"code" example:"400"`
+	Error string `json:"error" example:"status bad request"`
 }

@@ -25,18 +25,18 @@ type getTodoRequest struct {
 func (server *Server) getTodo(ctx *gin.Context) {
 	var req getTodoRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	todo, err := server.store.GetTodo(ctx, req.TodoID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -50,7 +50,7 @@ type createTodoRequest struct {
 func (server *Server) createTodo(ctx *gin.Context) {
 	var req createTodoRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -59,7 +59,7 @@ func (server *Server) createTodo(ctx *gin.Context) {
 		Storage:   server.storage,
 	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -74,7 +74,7 @@ type listTodoRequest struct {
 func (server *Server) listTodo(ctx *gin.Context) {
 	var req listTodoRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -83,7 +83,7 @@ func (server *Server) listTodo(ctx *gin.Context) {
 		Offset: (req.PageID - 1) * req.PageSize,
 	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -102,14 +102,14 @@ func (server *Server) updateTodoTitle(ctx *gin.Context) {
 	// Bind ID
 	var reqURIParams updateTodoRequestURIParams
 	if err := ctx.ShouldBindUri(&reqURIParams); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	// Bind Title
 	var reqBody updateTodoTitleRequestBody
 	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -119,11 +119,11 @@ func (server *Server) updateTodoTitle(ctx *gin.Context) {
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -138,14 +138,14 @@ func (server *Server) updateTodoStatus(ctx *gin.Context) {
 	// Bind ID
 	var reqURIParams updateTodoRequestURIParams
 	if err := ctx.ShouldBindUri(&reqURIParams); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	// Bind Title
 	var reqBody updateTodoStatusRequestBody
 	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -155,11 +155,11 @@ func (server *Server) updateTodoStatus(ctx *gin.Context) {
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -173,7 +173,7 @@ type deleteTodoRequest struct {
 func (server *Server) deleteTodo(ctx *gin.Context) {
 	var req deleteTodoRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -183,11 +183,11 @@ func (server *Server) deleteTodo(ctx *gin.Context) {
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		NewError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
