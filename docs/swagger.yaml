@@ -1,0 +1,57 @@
+basePath: /
+definitions:
+  db.Todo:
+    properties:
+      created_at:
+        type: string
+      file_count:
+        type: integer
+      id:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: Bhavya Jain
+  description: A todo management service API in GO which supports attachments
+  title: Todo API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Returns server health
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+      tags:
+      - todo
+  /todos/{id}:
+    get:
+      consumes:
+      - application/json
+      description: get todo by TodoID
+      parameters:
+      - description: Todo ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.Todo'
+      summary: Returns a Todo
+      tags:
+      - todos
+swagger: "2.0"

@@ -8,6 +8,41 @@ import (
 	db "github.com/jaingounchained/todo/db/sqlc"
 )
 
+type getTodoRequest struct {
+	TodoID int64 `uri:"todoId" binding:"required,min=1"`
+}
+
+// getTodo godoc
+//
+//	@Summary		Returns a Todo
+//	@Description	get todo by TodoID
+//	@Tags			todos
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Todo ID"
+//	@Success		200	{object}	db.Todo
+//	@Router			/todos/{id} [get]
+func (server *Server) getTodo(ctx *gin.Context) {
+	var req getTodoRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	todo, err := server.store.GetTodo(ctx, req.TodoID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, todo)
+}
+
 type createTodoRequest struct {
 	Title string `json:"title" binding:"required,max=255"`
 }
@@ -29,31 +64,6 @@ func (server *Server) createTodo(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, result.Todo)
-}
-
-type getTodoRequest struct {
-	TodoID int64 `uri:"todoId" binding:"required,min=1"`
-}
-
-func (server *Server) getTodo(ctx *gin.Context) {
-	var req getTodoRequest
-	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	todo, err := server.store.GetTodo(ctx, req.TodoID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, todo)
 }
 
 type listTodoRequest struct {

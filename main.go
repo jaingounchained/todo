@@ -14,17 +14,36 @@ import (
 
 	"github.com/jaingounchained/todo/api"
 	db "github.com/jaingounchained/todo/db/sqlc"
+	_ "github.com/jaingounchained/todo/docs"
 	storage "github.com/jaingounchained/todo/storage"
 	localStorage "github.com/jaingounchained/todo/storage/local_directory"
 	"github.com/jaingounchained/todo/util"
 	_ "github.com/lib/pq"
+	"go.uber.org/zap"
 )
 
+// @title     Todo API
+// @version         1.0
+// @description     A todo management service API in GO which supports attachments
+
+// @contact.name   Bhavya Jain
+
+// @host      localhost:8080
+// @BasePath  /
 func main() {
+	// Logging setup
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer logger.Sync()
+
+	logger.Info("Setup logger")
+
 	// Load config
 	config, err := util.LoadConfig(".")
 	if err != nil {
-		log.Fatal("cannot load config:", err)
+		logger.Fatal("Failed tp load config", zap.Error(err))
 	}
 
 	// Setup DB connection
@@ -32,7 +51,6 @@ func main() {
 	if err != nil {
 		log.Fatal("cannot connect to db:", err)
 	}
-	defer conn.Close()
 
 	// Setup file storage
 	cwd, err := os.Getwd()
@@ -52,7 +70,7 @@ func main() {
 	store := db.NewStore(conn)
 
 	// TODO: configure ginHandler to not limit the number of incoming bytes to ~10 MB: Give max memory to the gin engine
-	ginHandler := api.NewGinHandler(store, storage)
+	ginHandler := api.NewGinHandler(store, storage, logger)
 	httpServer := ginHandler.HttpServer(config.ServerAddress)
 
 	// Initializing the http server
@@ -61,17 +79,18 @@ func main() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 
-	applicationShutdown(done, httpServer)
+	applicationShutdown(done, httpServer, conn)
 }
 
-func applicationShutdown(done <-chan os.Signal, httpServer *http.Server) {
+func applicationShutdown(done <-chan os.Signal, httpServer *http.Server, dbConn *sql.DB) {
 	<-done
 	log.Println("Shutting down server...")
 
 	// Close all database connection etc
+	dbConn.Close()
 
 	// Server has 5 seconds to finish
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
 	if err := httpServer.Shutdown(ctx); err != nil {
