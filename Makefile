@@ -45,4 +45,7 @@ mockstorage:
 dockerbuild:
 	docker build -t todos:latest .
 
-.PHONY: network postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc server mocksql mockstorage clearlocalteststorage dockerbuild
+openapispec:
+	swag init
+
+.PHONY: network postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc server mocksql mockstorage clearlocalteststorage dockerbuild openapispec

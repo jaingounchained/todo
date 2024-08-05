@@ -24,7 +24,7 @@ const docTemplate = `{
                     "text/plain"
                 ],
                 "tags": [
-                    "todo"
+                    "health"
                 ],
                 "responses": {
                     "200": {
