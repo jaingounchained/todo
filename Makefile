@@ -1,4 +1,4 @@
-DB_URL=postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable
+DB_URL=postgresql://root:secret@localhost:5432/todos?sslmode=disable
 
 network:
 	docker network create todo-network
@@ -24,6 +24,9 @@ migratedown:
 migratedown1:
 	migrate -path db/migration -database "$(DB_URL)" -verbose down 1
 
+createlocalteststorage:
+	mkdir uploads
+
 clearlocalteststorage:
 	rm -rf ./uploads/
 
@@ -48,4 +51,4 @@ dockerbuild:
 openapispec:
 	swag init
 
-.PHONY: network postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc server mocksql mockstorage clearlocalteststorage dockerbuild openapispec
+.PHONY: network postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc server mocksql mockstorage clearlocalteststorage dockerbuild openapispec createlocalteststorage
