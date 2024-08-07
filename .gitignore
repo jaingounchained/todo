@@ -1,4 +1,5 @@
 uploads/*
+todo
 .DS_STORE
 test-files/*
 pg-data/*

@@ -602,34 +602,22 @@ func TestDeleteTodoAPI(t *testing.T) {
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
 		{
-			name:   "OK",
-			todoID: todo.ID,
+			name:   "InvalidID",
+			todoID: 0,
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
-				arg := db.DeleteTodoTxParams{
-					TodoID:  todo.ID,
-					Storage: mockStorage,
-				}
-				store.EXPECT().
-					DeleteTodoTx(gomock.Any(), gomock.Eq(arg)).
-					Times(1).
-					Return(nil)
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Any()).Times(0)
+				store.EXPECT().DeleteTodoTx(gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
 			name:   "NotFound",
 			todoID: todo.ID,
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
-				arg := db.DeleteTodoTxParams{
-					TodoID:  todo.ID,
-					Storage: mockStorage,
-				}
-				store.EXPECT().
-					DeleteTodoTx(gomock.Any(), gomock.Eq(arg)).
-					Times(1).
-					Return(db.ErrRecordNotFound)
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, db.ErrRecordNotFound)
+				store.EXPECT().DeleteTodoTx(gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -639,29 +627,30 @@ func TestDeleteTodoAPI(t *testing.T) {
 			name:   "InternalError",
 			todoID: todo.ID,
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				arg := db.DeleteTodoTxParams{
 					TodoID:  todo.ID,
 					Storage: mockStorage,
 				}
-				store.EXPECT().
-					DeleteTodoTx(gomock.Any(), gomock.Eq(arg)).
-					Times(1).
-					Return(sql.ErrConnDone)
+				store.EXPECT().DeleteTodoTx(gomock.Any(), gomock.Eq(arg)).Times(1).Return(sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 		{
-			name:   "InvalidID",
-			todoID: 0,
+			name:   "OK",
+			todoID: todo.ID,
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
-				store.EXPECT().
-					DeleteTodoTx(gomock.Any(), gomock.Any()).
-					Times(0)
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
+				arg := db.DeleteTodoTxParams{
+					TodoID:  todo.ID,
+					Storage: mockStorage,
+				}
+				store.EXPECT().DeleteTodoTx(gomock.Any(), gomock.Eq(arg)).Times(1).Return(nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
 	}

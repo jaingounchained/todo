@@ -21,24 +21,18 @@ type getTodoRequest struct {
 //	@Param			id path int true "Todo ID" minimum(1)
 //	@Success		200	{object}	db.Todo
 //	@Failure		400 {object}	HTTPError
-//	@Failure		404	{object}	HTTPError
+//	@Failure		404	{object}	ResourceNotFoundError
 //	@Failure		500	{object}	HTTPError
 //	@Router			/todos/{id} [get]
 func (server *Server) getTodo(ctx *gin.Context) {
 	var req getTodoRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		NewHTTPError(ctx, http.StatusBadRequest, todoIDInvalidError)
 		return
 	}
 
-	todo, err := server.store.GetTodo(ctx, req.TodoID)
-	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			NewError(ctx, http.StatusNotFound, err)
-			return
-		}
-
-		NewError(ctx, http.StatusInternalServerError, err)
+	todo := server.fetchTodoAndHandleErrors(ctx, req.TodoID)
+	if todo == nil {
 		return
 	}
 
@@ -64,7 +58,7 @@ type createTodoRequest struct {
 func (server *Server) createTodo(ctx *gin.Context) {
 	var req createTodoRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		NewHTTPError(ctx, http.StatusBadRequest, todoTitleInvalidError)
 		return
 	}
 
@@ -73,7 +67,7 @@ func (server *Server) createTodo(ctx *gin.Context) {
 		Storage:   server.storage,
 	})
 	if err != nil {
-		NewError(ctx, http.StatusInternalServerError, err)
+		NewHTTPError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -103,7 +97,8 @@ type listTodoRequest struct {
 func (server *Server) listTodo(ctx *gin.Context) {
 	var req listTodoRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		// TODO: Improve error message
+		NewHTTPError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -112,7 +107,7 @@ func (server *Server) listTodo(ctx *gin.Context) {
 		Offset: (req.PageID - 1) * req.PageSize,
 	})
 	if err != nil {
-		NewError(ctx, http.StatusInternalServerError, err)
+		NewHTTPError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -145,14 +140,14 @@ func (server *Server) updateTodoTitle(ctx *gin.Context) {
 	// Bind ID
 	var reqURIParams updateTodoRequestURIParams
 	if err := ctx.ShouldBindUri(&reqURIParams); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		NewHTTPError(ctx, http.StatusBadRequest, todoIDInvalidError)
 		return
 	}
 
 	// Bind Title
 	var reqBody updateTodoTitleRequestBody
 	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		NewHTTPError(ctx, http.StatusBadRequest, todoTitleInvalidError)
 		return
 	}
 
@@ -162,11 +157,14 @@ func (server *Server) updateTodoTitle(ctx *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			NewError(ctx, http.StatusNotFound, err)
+			NewHTTPError(ctx, http.StatusNotFound, &ResourceNotFoundError{
+				resourceType: "todo",
+				id:           reqURIParams.TodoID,
+			})
 			return
 		}
 
-		NewError(ctx, http.StatusInternalServerError, err)
+		NewHTTPError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -195,14 +193,15 @@ func (server *Server) updateTodoStatus(ctx *gin.Context) {
 	// Bind ID
 	var reqURIParams updateTodoRequestURIParams
 	if err := ctx.ShouldBindUri(&reqURIParams); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		NewHTTPError(ctx, http.StatusBadRequest, todoIDInvalidError)
 		return
 	}
 
 	// Bind Title
 	var reqBody updateTodoStatusRequestBody
 	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		// TODO: Improve error handling; Bind the error with the custom validator
+		NewHTTPError(ctx, http.StatusBadRequest, todoStatusInvalidError)
 		return
 	}
 
@@ -212,11 +211,14 @@ func (server *Server) updateTodoStatus(ctx *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			NewError(ctx, http.StatusNotFound, err)
+			NewHTTPError(ctx, http.StatusNotFound, &ResourceNotFoundError{
+				resourceType: "todo",
+				id:           reqURIParams.TodoID,
+			})
 			return
 		}
 
-		NewError(ctx, http.StatusInternalServerError, err)
+		NewHTTPError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -243,7 +245,12 @@ type deleteTodoRequest struct {
 func (server *Server) deleteTodo(ctx *gin.Context) {
 	var req deleteTodoRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		NewHTTPError(ctx, http.StatusBadRequest, todoIDInvalidError)
+		return
+	}
+
+	todo := server.fetchTodoAndHandleErrors(ctx, req.TodoID)
+	if todo == nil {
 		return
 	}
 
@@ -253,13 +260,34 @@ func (server *Server) deleteTodo(ctx *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			NewError(ctx, http.StatusNotFound, err)
+			NewHTTPError(ctx, http.StatusNotFound, &ResourceNotFoundError{
+				resourceType: "todo",
+				id:           req.TodoID,
+			})
 			return
 		}
 
-		NewError(ctx, http.StatusInternalServerError, err)
+		NewHTTPError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, nil)
+}
+
+func (server *Server) fetchTodoAndHandleErrors(ctx *gin.Context, todoID int64) *db.Todo {
+	todo, err := server.store.GetTodo(ctx, todoID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			NewHTTPError(ctx, http.StatusNotFound, &ResourceNotFoundError{
+				resourceType: "todo",
+				id:           todoID,
+			})
+			return nil
+		}
+
+		NewHTTPError(ctx, http.StatusInternalServerError, err)
+		return nil
+	}
+
+	return &todo
 }

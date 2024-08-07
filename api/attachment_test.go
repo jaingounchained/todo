@@ -177,7 +177,7 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 		{
 			name:      "TodoFiles+RequestFiles>5",
 			todoID:    todoWithFileCount4.ID,
-			fieldName: UploadAttachmentFieldName,
+			fieldName: UploadAttachmentFormFileKey,
 			files: []File{
 				{
 					fileName:     util.RandomString(10),
@@ -201,7 +201,7 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 		{
 			name:      "AttachmentFileTypeNotSupported",
 			todoID:    todo.ID,
-			fieldName: UploadAttachmentFieldName,
+			fieldName: UploadAttachmentFormFileKey,
 			files: []File{
 				{
 					fileName:     "example.txt",
@@ -225,7 +225,7 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 		{
 			name:      "AttachmentFileSizeTooLarge",
 			todoID:    todo.ID,
-			fieldName: UploadAttachmentFieldName,
+			fieldName: UploadAttachmentFormFileKey,
 			files: []File{
 				{
 					fileName:     "example.txt",
@@ -249,7 +249,7 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 		{
 			name:      "UploadAttachmentTxInternalError",
 			todoID:    todo.ID,
-			fieldName: UploadAttachmentFieldName,
+			fieldName: UploadAttachmentFormFileKey,
 			files: []File{
 				{
 					fileName:     "example.txt",
@@ -278,7 +278,7 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 		{
 			name:      "OK",
 			todoID:    todo.ID,
-			fieldName: UploadAttachmentFieldName,
+			fieldName: UploadAttachmentFormFileKey,
 			files: []File{
 				{
 					fileName:     "example.txt",
@@ -529,24 +529,11 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
 		{
-			name:   "OK",
-			todoID: todo.ID,
-			buildDBStub: func(store *mockdb.MockStore) {
-				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
-				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return([]db.Attachment{attachment1, attachment2}, nil)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchAttachmentsMetadata(t, recorder.Body, []db.Attachment{attachment1, attachment2})
-			},
-		},
-		{
 			name:   "InvalidTodoID",
 			todoID: 0,
 			buildDBStub: func(store *mockdb.MockStore) {
-				store.EXPECT().
-					GetTodo(gomock.Any(), gomock.Any()).
-					Times(0)
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Any()).Times(0)
+				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
@@ -556,10 +543,8 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 			name:   "TodoNotFound",
 			todoID: todo.ID,
 			buildDBStub: func(store *mockdb.MockStore) {
-				store.EXPECT().
-					GetTodo(gomock.Any(), gomock.Eq(todo.ID)).
-					Times(1).
-					Return(db.Todo{}, db.ErrRecordNotFound)
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, db.ErrRecordNotFound)
+				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -569,10 +554,8 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 			name:   "GetTodoQueryInternalError",
 			todoID: todo.ID,
 			buildDBStub: func(store *mockdb.MockStore) {
-				store.EXPECT().
-					GetTodo(gomock.Any(), gomock.Eq(todo.ID)).
-					Times(1).
-					Return(db.Todo{}, sql.ErrConnDone)
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, sql.ErrConnDone)
+				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -598,6 +581,18 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name:   "OK",
+			todoID: todo.ID,
+			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
+				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return([]db.Attachment{attachment1, attachment2}, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchAttachmentsMetadata(t, recorder.Body, []db.Attachment{attachment1, attachment2})
 			},
 		},
 	}

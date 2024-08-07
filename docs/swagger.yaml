@@ -2,12 +2,11 @@ basePath: /
 definitions:
   api.HTTPError:
     properties:
-      code:
-        example: 400
-        type: integer
-      error:
-        example: status bad request
+      message:
+        example: generic error
         type: string
+    type: object
+  api.ResourceNotFoundError:
     type: object
   api.createTodoRequest:
     properties:
@@ -19,11 +18,11 @@ definitions:
     type: object
   api.getTodoAttachmentMetadataResponse:
     properties:
+      attachmentId:
+        type: integer
       filename:
         type: string
-      id:
-        type: integer
-      todo_id:
+      todoId:
         type: integer
     type: object
   api.updateTodoStatusRequestBody:
@@ -43,16 +42,16 @@ definitions:
     type: object
   db.Todo:
     properties:
-      created_at:
+      createdAt:
         type: string
-      file_count:
-        type: integer
-      id:
+      fileCount:
         type: integer
       status:
         type: string
       title:
         type: string
+      todoId:
+        type: integer
     type: object
 host: localhost:8080
 info:
@@ -83,14 +82,14 @@ paths:
       - description: page ID
         in: query
         minimum: 1
-        name: page_id
+        name: pageId
         required: true
         type: integer
       - description: page size
         in: query
         maximum: 10
         minimum: 5
-        name: page_size
+        name: pageSize
         required: true
         type: integer
       produces:
@@ -175,13 +174,10 @@ paths:
       tags:
       - todos
     get:
-      consumes:
-      - application/json
-      description: get todo by TodoID
+      description: Get todo by TodoID
       parameters:
       - description: Todo ID
         in: path
-        minimum: 1
         name: id
         required: true
         type: integer
@@ -199,7 +195,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.HTTPError'
+            $ref: '#/definitions/api.ResourceNotFoundError'
         "500":
           description: Internal Server Error
           schema:

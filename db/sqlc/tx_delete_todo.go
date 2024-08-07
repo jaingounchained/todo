@@ -18,12 +18,6 @@ func (store *SQLStore) DeleteTodoTx(ctx context.Context, arg DeleteTodoTxParams)
 	return store.execTx(ctx, func(q *Queries) error {
 		var err error
 
-		// Find the todo
-		_, err = q.GetTodo(ctx, arg.TodoID)
-		if err != nil {
-			return err
-		}
-
 		// Delete todo and corresponding attachment rows if present
 		err = q.DeleteTodo(ctx, arg.TodoID)
 		if err != nil {

@@ -54,7 +54,7 @@ const docTemplate = `{
                         "minimum": 1,
                         "type": "integer",
                         "description": "page ID",
-                        "name": "page_id",
+                        "name": "pageId",
                         "in": "query",
                         "required": true
                     },
@@ -63,7 +63,7 @@ const docTemplate = `{
                         "minimum": 5,
                         "type": "integer",
                         "description": "page size",
-                        "name": "page_size",
+                        "name": "pageSize",
                         "in": "query",
                         "required": true
                     }
@@ -139,10 +139,7 @@ const docTemplate = `{
         },
         "/todos/{id}": {
             "get": {
-                "description": "get todo by TodoID",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Get todo by TodoID",
                 "produces": [
                     "application/json"
                 ],
@@ -152,7 +149,6 @@ const docTemplate = `{
                 "summary": "Returns a Todo",
                 "parameters": [
                     {
-                        "minimum": 1,
                         "type": "integer",
                         "description": "Todo ID",
                         "name": "id",
@@ -176,7 +172,7 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/api.HTTPError"
+                            "$ref": "#/definitions/api.ResourceNotFoundError"
                         }
                     },
                     "500": {
@@ -613,15 +609,14 @@ const docTemplate = `{
         "api.HTTPError": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 400
-                },
-                "error": {
+                "message": {
                     "type": "string",
-                    "example": "status bad request"
+                    "example": "generic error"
                 }
             }
+        },
+        "api.ResourceNotFoundError": {
+            "type": "object"
         },
         "api.createTodoRequest": {
             "type": "object",
@@ -638,13 +633,13 @@ const docTemplate = `{
         "api.getTodoAttachmentMetadataResponse": {
             "type": "object",
             "properties": {
+                "attachmentId": {
+                    "type": "integer"
+                },
                 "filename": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
-                "todo_id": {
+                "todoId": {
                     "type": "integer"
                 }
             }
@@ -675,13 +670,10 @@ const docTemplate = `{
         "db.Todo": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "createdAt": {
                     "type": "string"
                 },
-                "file_count": {
-                    "type": "integer"
-                },
-                "id": {
+                "fileCount": {
                     "type": "integer"
                 },
                 "status": {
@@ -689,6 +681,9 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                },
+                "todoId": {
+                    "type": "integer"
                 }
             }
         }

@@ -1,16 +1,11 @@
 package api
 
 import (
-	"errors"
+	"fmt"
 	"net/textproto"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jaingounchained/todo/util"
-)
-
-const (
-	FileSizeLimit = 2 << 20
-	ContentType   = "Content-Type"
 )
 
 var validTodoStatus validator.Func = func(fl validator.FieldLevel) bool {
@@ -21,18 +16,30 @@ var validTodoStatus validator.Func = func(fl validator.FieldLevel) bool {
 	return false
 }
 
-func validateMimeType(a textproto.MIMEHeader) error {
-	mimeType := a.Get(ContentType)
+type invalidMimeTypeError error
+
+func newInvalidMimeTypeError(filename, mimeType string) invalidMimeTypeError {
+	return fmt.Errorf("%s file of invalid mime type: %s", filename, mimeType)
+}
+
+func validateMimeType(filename string, mimeHeader textproto.MIMEHeader) error {
+	mimeType := mimeHeader.Get(ContentType)
 	if !util.IsSupportedMimeType(mimeType) {
-		return errors.New("Unsupported file type")
+		return newInvalidMimeTypeError(filename, mimeType)
 	}
 
 	return nil
 }
 
-func validateFileSize(fileSize int64) error {
+type fileSizeTooLargeError error
+
+func newFileSizeTooLargeError(filename string, fileSize int64) fileSizeTooLargeError {
+	return fmt.Errorf("%s file size too large: %d MB", filename, fileSize/1024/1024)
+}
+
+func validateFileSize(filename string, fileSize int64) error {
 	if fileSize > FileSizeLimit {
-		return errors.New("File size larger than permissible")
+		return newFileSizeTooLargeError(filename, fileSize)
 	}
 
 	return nil
