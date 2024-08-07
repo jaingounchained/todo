@@ -108,7 +108,7 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 			name:   "TodoAbsent",
 			todoID: todo.ID,
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage, fileContents storage.FileContents) {
-				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, sql.ErrNoRows)
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, db.ErrRecordNotFound)
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -408,7 +408,7 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 			todoID:       todo.ID,
 			attachmentID: attachment.ID,
 			buildDBStub: func(store *mockdb.MockStore) {
-				store.EXPECT().GetAttachment(gomock.Any(), gomock.Eq(attachment.ID)).Times(1).Return(db.Attachment{}, sql.ErrNoRows)
+				store.EXPECT().GetAttachment(gomock.Any(), gomock.Eq(attachment.ID)).Times(1).Return(db.Attachment{}, db.ErrRecordNotFound)
 			},
 			buildStorageStub: func(mockStorage *mockStorage.MockStorage) {
 				mockStorage.EXPECT().
@@ -559,7 +559,7 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 				store.EXPECT().
 					GetTodo(gomock.Any(), gomock.Eq(todo.ID)).
 					Times(1).
-					Return(db.Todo{}, sql.ErrNoRows)
+					Return(db.Todo{}, db.ErrRecordNotFound)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -583,7 +583,7 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 			todoID: todo.ID,
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
-				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return([]db.Attachment{}, sql.ErrNoRows)
+				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return([]db.Attachment{}, db.ErrRecordNotFound)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -665,7 +665,7 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 			todoID:       todo.ID,
 			attachmentID: attachment.ID,
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
-				store.EXPECT().GetAttachment(gomock.Any(), gomock.Eq(attachment.ID)).Times(1).Return(db.Attachment{}, sql.ErrNoRows)
+				store.EXPECT().GetAttachment(gomock.Any(), gomock.Eq(attachment.ID)).Times(1).Return(db.Attachment{}, db.ErrRecordNotFound)
 				store.EXPECT().DeleteAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {

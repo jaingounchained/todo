@@ -8,16 +8,16 @@ const (
 
 func NewError(ctx *gin.Context, status int, err error) {
 	er := HTTPError{
-		Message: err.Error(),
+		Error: err.Error(),
 	}
 	ctx.JSON(status, er)
 }
 
 type HTTPError struct {
-	Message string `json:"message" example:"status bad request"`
+	Error string `json:"error" example:"status bad request"`
 }
 
 // Error implements the error interface for ErrInvalidInput.
 func (e *HTTPError) Error() string {
-	return e.Error()
+	return fmt.Sprintf("invalid input in field '%s': %s", e.Field, e.Problem)
 }

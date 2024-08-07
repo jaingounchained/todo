@@ -20,13 +20,13 @@ INSERT INTO attachments (
 `
 
 type CreateAttachmentParams struct {
-	TodoID           int64  `json:"todo_id"`
-	OriginalFilename string `json:"original_filename"`
-	StorageFilename  string `json:"storage_filename"`
+	TodoID           int64  `json:"todoId"`
+	OriginalFilename string `json:"originalFilename"`
+	StorageFilename  string `json:"storageFilename"`
 }
 
 func (q *Queries) CreateAttachment(ctx context.Context, arg CreateAttachmentParams) (Attachment, error) {
-	row := q.db.QueryRowContext(ctx, createAttachment, arg.TodoID, arg.OriginalFilename, arg.StorageFilename)
+	row := q.db.QueryRow(ctx, createAttachment, arg.TodoID, arg.OriginalFilename, arg.StorageFilename)
 	var i Attachment
 	err := row.Scan(
 		&i.ID,
@@ -44,7 +44,7 @@ WHERE id = $1
 `
 
 func (q *Queries) DeleteAttachment(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteAttachment, id)
+	_, err := q.db.Exec(ctx, deleteAttachment, id)
 	return err
 }
 
@@ -54,7 +54,7 @@ WHERE todo_id = $1
 `
 
 func (q *Queries) DeleteAttachmentsOfTodo(ctx context.Context, todoID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteAttachmentsOfTodo, todoID)
+	_, err := q.db.Exec(ctx, deleteAttachmentsOfTodo, todoID)
 	return err
 }
 
@@ -64,7 +64,7 @@ WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetAttachment(ctx context.Context, id int64) (Attachment, error) {
-	row := q.db.QueryRowContext(ctx, getAttachment, id)
+	row := q.db.QueryRow(ctx, getAttachment, id)
 	var i Attachment
 	err := row.Scan(
 		&i.ID,
@@ -82,7 +82,7 @@ WHERE todo_id = $1 LIMIT 5
 `
 
 func (q *Queries) ListAttachmentOfTodo(ctx context.Context, todoID int64) ([]Attachment, error) {
-	rows, err := q.db.QueryContext(ctx, listAttachmentOfTodo, todoID)
+	rows, err := q.db.Query(ctx, listAttachmentOfTodo, todoID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,9 +100,6 @@ func (q *Queries) ListAttachmentOfTodo(ctx context.Context, todoID int64) ([]Att
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

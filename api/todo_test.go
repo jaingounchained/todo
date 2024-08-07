@@ -78,7 +78,7 @@ func TestGetTodoAPI(t *testing.T) {
 				store.EXPECT().
 					GetTodo(gomock.Any(), gomock.Eq(todo.ID)).
 					Times(1).
-					Return(db.Todo{}, sql.ErrNoRows)
+					Return(db.Todo{}, db.ErrRecordNotFound)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -341,8 +341,8 @@ func TestListTodoAPI(t *testing.T) {
 
 			// Add query parameters to response URL
 			q := request.URL.Query()
-			q.Add("page_id", fmt.Sprintf("%d", tc.query.pageID))
-			q.Add("page_size", fmt.Sprintf("%d", tc.query.pageSize))
+			q.Add("pageId", fmt.Sprintf("%d", tc.query.pageID))
+			q.Add("pageSize", fmt.Sprintf("%d", tc.query.pageSize))
 			request.URL.RawQuery = q.Encode()
 
 			server.router.ServeHTTP(recorder, request)
@@ -421,7 +421,7 @@ func TestUpdateTodoTitleAPI(t *testing.T) {
 				store.EXPECT().
 					UpdateTodoTitle(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.Todo{}, sql.ErrNoRows)
+					Return(db.Todo{}, db.ErrRecordNotFound)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -541,7 +541,7 @@ func TestUpdateTodoStatusAPI(t *testing.T) {
 				store.EXPECT().
 					UpdateTodoStatus(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.Todo{}, sql.ErrNoRows)
+					Return(db.Todo{}, db.ErrRecordNotFound)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -629,7 +629,7 @@ func TestDeleteTodoAPI(t *testing.T) {
 				store.EXPECT().
 					DeleteTodoTx(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
-					Return(sql.ErrNoRows)
+					Return(db.ErrRecordNotFound)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)

@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -79,7 +78,7 @@ func TestDeleteAttachment(t *testing.T) {
 
 	attachment2, err := testStore.GetAttachment(context.Background(), attachment1.ID)
 	require.Error(t, err)
-	require.EqualError(t, err, sql.ErrNoRows.Error())
+	require.EqualError(t, err, ErrRecordNotFound.Error())
 	require.Empty(t, attachment2)
 }
 
@@ -96,7 +95,7 @@ func TestDeleteAttachmentsOfTodo(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		attachment, err := testStore.GetAttachment(context.Background(), attachments[i].ID)
 		require.Error(t, err)
-		require.EqualError(t, err, sql.ErrNoRows.Error())
+		require.EqualError(t, err, ErrRecordNotFound.Error())
 		require.Empty(t, attachment)
 	}
 }

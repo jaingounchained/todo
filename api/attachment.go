@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -47,7 +46,7 @@ func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 
 	todo, err := server.store.GetTodo(ctx, req.TodoID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
@@ -160,7 +159,7 @@ func (server *Server) getTodoAttachment(ctx *gin.Context) {
 	// Query attachment metadata
 	attachment, err := server.store.GetAttachment(ctx, req.AttachmentID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
@@ -193,8 +192,8 @@ type getTodoAttachmentMetadataRequest struct {
 }
 
 type getTodoAttachmentMetadataResponse struct {
-	ID       int64  `json:"id"`
-	TodoID   int64  `json:"todo_id"`
+	ID       int64  `json:"attachmentId"`
+	TodoID   int64  `json:"todoId"`
 	Filename string `json:"filename"`
 }
 
@@ -221,7 +220,7 @@ func (server *Server) getTodoAttachmentMetadata(ctx *gin.Context) {
 
 	_, err := server.store.GetTodo(ctx, req.TodoID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
@@ -233,7 +232,7 @@ func (server *Server) getTodoAttachmentMetadata(ctx *gin.Context) {
 	// Query attachment metadata
 	attachments, err := server.store.ListAttachmentOfTodo(ctx, req.TodoID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
@@ -283,7 +282,7 @@ func (server *Server) deleteTodoAttachment(ctx *gin.Context) {
 
 	attachment, err := server.store.GetAttachment(ctx, req.AttachmentID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			NewError(ctx, http.StatusNotFound, err)
 			return
 		}

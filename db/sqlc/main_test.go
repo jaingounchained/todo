@@ -1,13 +1,14 @@
 package db
 
 import (
-	"database/sql"
+	"context"
 	"log"
 	"os"
 	"testing"
 
+	_ "github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jaingounchained/todo/util"
-	_ "github.com/lib/pq"
 )
 
 var testStore Store
@@ -18,12 +19,12 @@ func TestMain(m *testing.M) {
 		log.Fatal("cannot load config:", err)
 	}
 
-	testDB, err := sql.Open(config.DBDriver, config.DBSource)
+	connPool, err := pgxpool.New(context.Background(), config.DBSource)
 	if err != nil {
 		log.Fatal("cannot connect to db:", err)
 	}
 
-	testStore = NewStore(testDB)
+	testStore = NewStore(connPool)
 
 	code := m.Run()
 	m.Run()

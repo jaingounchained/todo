@@ -18,7 +18,7 @@ INSERT INTO todos (
 `
 
 func (q *Queries) CreateTodo(ctx context.Context, title string) (Todo, error) {
-	row := q.db.QueryRowContext(ctx, createTodo, title)
+	row := q.db.QueryRow(ctx, createTodo, title)
 	var i Todo
 	err := row.Scan(
 		&i.ID,
@@ -36,7 +36,7 @@ WHERE id = $1
 `
 
 func (q *Queries) DeleteTodo(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteTodo, id)
+	_, err := q.db.Exec(ctx, deleteTodo, id)
 	return err
 }
 
@@ -46,7 +46,7 @@ WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetTodo(ctx context.Context, id int64) (Todo, error) {
-	row := q.db.QueryRowContext(ctx, getTodo, id)
+	row := q.db.QueryRow(ctx, getTodo, id)
 	var i Todo
 	err := row.Scan(
 		&i.ID,
@@ -71,7 +71,7 @@ type ListTodosParams struct {
 }
 
 func (q *Queries) ListTodos(ctx context.Context, arg ListTodosParams) ([]Todo, error) {
-	rows, err := q.db.QueryContext(ctx, listTodos, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listTodos, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -90,9 +90,6 @@ func (q *Queries) ListTodos(ctx context.Context, arg ListTodosParams) ([]Todo, e
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -107,12 +104,12 @@ RETURNING id, title, status, created_at, file_count
 `
 
 type UpdateTodoFileCountParams struct {
-	ID        int64 `json:"id"`
-	FileCount int32 `json:"file_count"`
+	ID        int64 `json:"todoId"`
+	FileCount int32 `json:"fileCount"`
 }
 
 func (q *Queries) UpdateTodoFileCount(ctx context.Context, arg UpdateTodoFileCountParams) (Todo, error) {
-	row := q.db.QueryRowContext(ctx, updateTodoFileCount, arg.ID, arg.FileCount)
+	row := q.db.QueryRow(ctx, updateTodoFileCount, arg.ID, arg.FileCount)
 	var i Todo
 	err := row.Scan(
 		&i.ID,
@@ -132,12 +129,12 @@ RETURNING id, title, status, created_at, file_count
 `
 
 type UpdateTodoStatusParams struct {
-	ID     int64  `json:"id"`
+	ID     int64  `json:"todoId"`
 	Status string `json:"status"`
 }
 
 func (q *Queries) UpdateTodoStatus(ctx context.Context, arg UpdateTodoStatusParams) (Todo, error) {
-	row := q.db.QueryRowContext(ctx, updateTodoStatus, arg.ID, arg.Status)
+	row := q.db.QueryRow(ctx, updateTodoStatus, arg.ID, arg.Status)
 	var i Todo
 	err := row.Scan(
 		&i.ID,
@@ -157,12 +154,12 @@ RETURNING id, title, status, created_at, file_count
 `
 
 type UpdateTodoTitleParams struct {
-	ID    int64  `json:"id"`
+	ID    int64  `json:"todoId"`
 	Title string `json:"title"`
 }
 
 func (q *Queries) UpdateTodoTitle(ctx context.Context, arg UpdateTodoTitleParams) (Todo, error) {
-	row := q.db.QueryRowContext(ctx, updateTodoTitle, arg.ID, arg.Title)
+	row := q.db.QueryRow(ctx, updateTodoTitle, arg.ID, arg.Title)
 	var i Todo
 	err := row.Scan(
 		&i.ID,

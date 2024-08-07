@@ -9,17 +9,17 @@ import (
 )
 
 type Attachment struct {
-	ID               int64     `json:"id"`
-	TodoID           int64     `json:"todo_id"`
-	OriginalFilename string    `json:"original_filename"`
-	StorageFilename  string    `json:"storage_filename"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID               int64     `json:"attachmentId"`
+	TodoID           int64     `json:"todoId"`
+	OriginalFilename string    `json:"originalFilename"`
+	StorageFilename  string    `json:"storageFilename"`
+	CreatedAt        time.Time `json:"createdAt"`
 }
 
 type Todo struct {
-	ID        int64     `json:"id"`
+	ID        int64     `json:"todoId"`
 	Title     string    `json:"title"`
 	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
-	FileCount int32     `json:"file_count"`
+	CreatedAt time.Time `json:"createdAt"`
+	FileCount int32     `json:"fileCount"`
 }

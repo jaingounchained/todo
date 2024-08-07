@@ -1,7 +1,7 @@
 package api
 
 import (
-	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,14 +12,13 @@ type getTodoRequest struct {
 	TodoID int64 `uri:"todoId" binding:"required,min=1"`
 }
 
-// getTodo godoc
+// GetTodo godoc
 //
 //	@Summary		Returns a Todo
-//	@Description	get todo by TodoID
+//	@Description	Get todo by TodoID
 //	@Tags			todos
-//	@Accept			json
 //	@Produce		json
-//	@Param			id	path		int	true	"Todo ID"          minimum(1)
+//	@Param			id path int true "Todo ID" minimum(1)
 //	@Success		200	{object}	db.Todo
 //	@Failure		400 {object}	HTTPError
 //	@Failure		404	{object}	HTTPError
@@ -34,7 +33,7 @@ func (server *Server) getTodo(ctx *gin.Context) {
 
 	todo, err := server.store.GetTodo(ctx, req.TodoID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
@@ -82,8 +81,8 @@ func (server *Server) createTodo(ctx *gin.Context) {
 }
 
 type listTodoRequest struct {
-	PageID   int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
+	PageID   int32 `form:"pageId" binding:"required,min=1"`
+	PageSize int32 `form:"pageSize" binding:"required,min=5,max=10"`
 }
 
 // listTodo godoc
@@ -94,10 +93,10 @@ type listTodoRequest struct {
 //	@Accept			json
 //	@Produce		json
 //
-// @Param        page_id    query     int  true  "page ID"  minimum(1)
-// @Param        page_size    query     int  true  "page size"  minimum(5) maximum(10)
+// @Param        pageId    query     int  true  "page ID"  minimum(1)
+// @Param        pageSize    query     int  true  "page size"  minimum(5) maximum(10)
 //
-//	@Success		200	{object}	[]db.Todo
+//	@Success		200	{array}		db.Todo
 //	@Failure		400 {object}	HTTPError
 //	@Failure		500	{object}	HTTPError
 //	@Router			/todos [get]
@@ -162,7 +161,7 @@ func (server *Server) updateTodoTitle(ctx *gin.Context) {
 		Title: reqBody.Title,
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
@@ -212,7 +211,7 @@ func (server *Server) updateTodoStatus(ctx *gin.Context) {
 		Status: reqBody.Status,
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			NewError(ctx, http.StatusNotFound, err)
 			return
 		}
@@ -253,7 +252,7 @@ func (server *Server) deleteTodo(ctx *gin.Context) {
 		Storage: server.storage,
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			NewError(ctx, http.StatusNotFound, err)
 			return
 		}

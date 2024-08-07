@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -106,7 +105,7 @@ func TestDeleteTodo(t *testing.T) {
 
 	todo2, err := testStore.GetTodo(context.Background(), todo1.ID)
 	require.Error(t, err)
-	require.EqualError(t, err, sql.ErrNoRows.Error())
+	require.EqualError(t, err, ErrRecordNotFound.Error())
 	require.Empty(t, todo2)
 }
 

@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"testing"
 
@@ -69,7 +68,7 @@ func TestCreateTodoTxStorageFailure(t *testing.T) {
 
 	// Query the db to find the row
 	actualTodo, err := testStore.GetTodo(context.Background(), result.Todo.ID)
-	require.EqualError(t, err, sql.ErrNoRows.Error())
+	require.EqualError(t, err, ErrRecordNotFound.Error())
 	require.Empty(t, actualTodo)
 
 	// Check todoID called in storage

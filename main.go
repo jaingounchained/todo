@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log"
 	"net/http"
@@ -12,13 +11,14 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jaingounchained/todo/api"
 	db "github.com/jaingounchained/todo/db/sqlc"
 	_ "github.com/jaingounchained/todo/docs"
 	storage "github.com/jaingounchained/todo/storage"
 	localStorage "github.com/jaingounchained/todo/storage/local_directory"
 	"github.com/jaingounchained/todo/util"
-	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -29,6 +29,9 @@ import (
 // @host      localhost:8080
 // @BasePath  /
 func main() {
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
+
 	// Logging setup
 	logger, err := zap.NewDevelopment()
 	if err != nil {
@@ -45,9 +48,14 @@ func main() {
 	}
 
 	// Setup DB connection
-	conn, err := sql.Open(config.DBDriver, config.DBSource)
+	connPool, err := pgxpool.New(context.Background(), config.DBSource)
 	if err != nil {
 		log.Fatal("cannot connect to db:", err)
+	}
+
+	if err := connPool.Ping(context.Background()); err != nil {
+		log.Fatal("Cannot ping the db:", err)
+		os.Exit(1)
 	}
 
 	// Setup file storage
@@ -61,11 +69,12 @@ func main() {
 		localStoragePath := filepath.Join(cwd, config.LocalStorageDirectory)
 		storage, err = localStorage.New(localStoragePath)
 		if err != nil {
-			log.Fatal("cannot setup storage:", err)
+			done <- syscall.SIGTERM
+			logger.Error("cannot setup storage:", zap.Any("Error:", err))
 		}
 	}
 
-	store := db.NewStore(conn)
+	store := db.NewStore(connPool)
 
 	// TODO: configure ginHandler to not limit the number of incoming bytes to ~10 MB: Give max memory to the gin engine
 	ginHandler := api.NewGinHandler(store, storage, logger)
@@ -74,31 +83,24 @@ func main() {
 	// Initializing the http server
 	go startHTTPServer(httpServer)
 
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
-
-	applicationShutdown(done, httpServer, conn)
+	applicationShutdown(done, httpServer, connPool)
 }
 
-func applicationShutdown(done <-chan os.Signal, httpServer *http.Server, dbConn *sql.DB) {
+func applicationShutdown(done <-chan os.Signal, httpServer *http.Server, connPool *pgxpool.Pool) {
 	<-done
 	log.Println("Shutting down server...")
 
 	// Close all database connection etc
-	dbConn.Close()
+	connPool.Close()
 
 	// Server has 5 seconds to finish
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := httpServer.Shutdown(ctx); err != nil {
 		log.Fatal("Server forced to shutdown:", err)
 	}
 
-	select {
-	case <-ctx.Done():
-		log.Println("timeout of 5 seconds.")
-	}
 	log.Println("Server exiting")
 }
 
