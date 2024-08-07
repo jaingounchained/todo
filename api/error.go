@@ -9,15 +9,15 @@ import (
 
 var (
 	todoIDInvalidError                         = errors.New("Invalid todoId; todoId must be a valid integer > 0")
-	todoTitleInvalidError                      = errors.New("Invalid todoTitle; todoTitle must be a string of length < 256")
 	todoStatusInvalidError                     = errors.New("Invalid todoTitle; todoTitle must be either 'complete' or 'incomplete'")
-	pageIDInvalidError                         = errors.New("Invalid pageId; pageId must be a valid integer > 0")
-	pageSizeInvalidError                       = errors.New("Invalid pageSize; pageSize must be a valid integer >= 5 & <= 10")
-	attachmentIDInvalidError                   = errors.New("Invalid attachmentId; attachmentId must be a valid integer > 0")
 	uploadAttachmentAPIContentLengthLimitError = fmt.Errorf("Upload attachment API request content lenght must be less than %d Mibs", MaxContentLength/1024/1024)
 	invalidHeaderContentTypeError              = fmt.Errorf("Request %s isn't %s", ContentType, MultipartFormDataHeader)
 	attachmentKeyEmptyError                    = fmt.Errorf("No files present in '%s' key", UploadAttachmentFormFileKey)
 	noAttachmentsPresentForTheTodo             = errors.New("No attachments present for the todo")
+	// todoTitleInvalidError                      = errors.New("Invalid todoTitle; todoTitle must be a string of length < 256")
+	// pageIDInvalidError                         = errors.New("Invalid pageId; pageId must be a valid integer > 0")
+	// pageSizeInvalidError                       = errors.New("Invalid pageSize; pageSize must be a valid integer >= 5 & <= 10")
+	// attachmentIDInvalidError                   = errors.New("Invalid attachmentId; attachmentId must be a valid integer > 0")
 )
 
 type todoAttachmentLimitReachedError error

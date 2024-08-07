@@ -6,12 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// health             godoc
+// health        godoc
 // @Description  Returns server health
 // @Tags         health
 // @Produce      text/plain
 // @Success      200
-// @Failure      500
 // @Router       /health [get]
 func (server *Server) health(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, "OK")

@@ -1,13 +1,5 @@
 basePath: /
 definitions:
-  api.HTTPError:
-    properties:
-      message:
-        example: generic error
-        type: string
-    type: object
-  api.ResourceNotFoundError:
-    type: object
   api.createTodoRequest:
     properties:
       title:
@@ -69,14 +61,10 @@ paths:
       responses:
         "200":
           description: OK
-        "500":
-          description: Internal Server Error
       tags:
       - health
   /todos:
     get:
-      consumes:
-      - application/json
       description: List todos based on page ID and page size
       parameters:
       - description: page ID
@@ -103,12 +91,8 @@ paths:
             type: array
         "400":
           description: Bad Request
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "500":
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.HTTPError'
       summary: List todos
       tags:
       - todos
@@ -132,12 +116,8 @@ paths:
             $ref: '#/definitions/db.Todo'
         "400":
           description: Bad Request
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "500":
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.HTTPError'
       summary: Creates a Todo
       tags:
       - todos
@@ -153,54 +133,16 @@ paths:
         name: id
         required: true
         type: integer
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
         "400":
           description: Bad Request
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "404":
           description: Not Found
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "500":
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.HTTPError'
       summary: Deletes a Todo
-      tags:
-      - todos
-    get:
-      description: Get todo by TodoID
-      parameters:
-      - description: Todo ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/db.Todo'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.HTTPError'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/api.ResourceNotFoundError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.HTTPError'
-      summary: Returns a Todo
       tags:
       - todos
   /todos/{id}/attachments:
@@ -224,20 +166,12 @@ paths:
             $ref: '#/definitions/api.getTodoAttachmentMetadataResponse'
         "400":
           description: Bad Request
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "403":
           description: Forbidden
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "404":
           description: Not Found
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "500":
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.HTTPError'
       summary: Get attachments metadata
       tags:
       - attachments
@@ -260,35 +194,21 @@ paths:
         name: attachments
         required: true
         type: array
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
         "400":
           description: Bad Request
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "403":
-          description: < 5 attachments allowed per todo
-          schema:
-            $ref: '#/definitions/api.HTTPError'
+          description: Forbidden
         "404":
           description: Not Found
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "413":
-          description: < 2 MB per file
-          schema:
-            $ref: '#/definitions/api.HTTPError'
+          description: Request Entity Too Large
         "415":
-          description: unsuppoerted attachment
-          schema:
-            $ref: '#/definitions/api.HTTPError'
+          description: Unsupported Media Type
         "500":
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.HTTPError'
       summary: Upload attachments
       tags:
       - attachments
@@ -310,69 +230,18 @@ paths:
         name: attachmentId
         required: true
         type: integer
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
         "400":
           description: Bad Request
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "404":
           description: Not Found
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "413":
           description: Request Entity Too Large
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "500":
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.HTTPError'
       summary: Delete attachment
-      tags:
-      - attachments
-    get:
-      consumes:
-      - application/json
-      description: Get attachment for the corresponding todo
-      parameters:
-      - description: Todo ID
-        in: path
-        minimum: 1
-        name: id
-        required: true
-        type: integer
-      - description: attachment ID
-        in: path
-        minimum: 1
-        name: attachmentId
-        required: true
-        type: integer
-      produces:
-      - application/octet-stream
-      responses:
-        "200":
-          description: OK
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.HTTPError'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/api.HTTPError'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/api.HTTPError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.HTTPError'
-      summary: Get attachments
       tags:
       - attachments
   /todos/{id}/status:
@@ -402,16 +271,10 @@ paths:
             $ref: '#/definitions/db.Todo'
         "400":
           description: Bad Request
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "404":
           description: Not Found
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "500":
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.HTTPError'
       summary: Updated the todo status
       tags:
       - todos
@@ -442,17 +305,71 @@ paths:
             $ref: '#/definitions/db.Todo'
         "400":
           description: Bad Request
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "404":
           description: Not Found
-          schema:
-            $ref: '#/definitions/api.HTTPError'
         "500":
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.HTTPError'
       summary: Updated the todo title
       tags:
       - todos
+  /todos/{todoId}:
+    get:
+      description: Get todo by TodoID
+      parameters:
+      - description: Todo ID
+        in: path
+        minimum: 1
+        name: todoId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/db.Todo'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Returns a Todo
+      tags:
+      - todos
+  /todos/{todoId}/attachments/{attachmentId}:
+    get:
+      consumes:
+      - application/json
+      description: Get attachment for the corresponding todo
+      parameters:
+      - description: Todo ID
+        in: path
+        minimum: 1
+        name: todoId
+        required: true
+        type: integer
+      - description: attachment ID
+        in: path
+        minimum: 1
+        name: attachmentId
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Get attachments
+      tags:
+      - attachments
 swagger: "2.0"

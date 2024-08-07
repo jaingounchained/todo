@@ -21,16 +21,15 @@ type uploadTodoAttachmentsRequest struct {
 //	@Description	Upload attachments for the corresponding todo
 //	@Tags			attachments
 //	@Accept			multipart/form-data
-//	@Produce		json
 //	@Param			id	path		int	true	"Todo ID"          minimum(1)
 //	@Param			attachments	formData	[]file	true	"attachments"
-//	@Success		200		{object}	nil
-//	@Failure		403		{object}	HTTPError "< 5 attachments allowed per todo"
-//	@Failure		413		{object}	HTTPError "< 2 MB per file"
-//	@Failure		415		{object}	HTTPError "unsuppoerted attachment"
-//	@Failure		404		{object}	HTTPError
-//	@Failure		400		{object}	HTTPError
-//	@Failure		500		{object}	HTTPError
+//	@Success		200
+//	@Failure		403
+//	@Failure		413
+//	@Failure		415
+//	@Failure		404
+//	@Failure		400
+//	@Failure		500
 //	@Router			/todos/{id}/attachments [post]
 func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 	// Validate Content-Type header
@@ -139,11 +138,11 @@ type getTodoAttachmentRequest struct {
 //	@Produce		application/octet-stream
 //	@Param			todoId	path		int	true	"Todo ID"          minimum(1)
 //	@Param			attachmentId	path		int	true	"attachment ID"          minimum(1)
-//	@Success		200		{object}	nil
-//	@Failure		403		{object}	HTTPError
-//	@Failure		404		{object}	HTTPError
-//	@Failure		400		{object}	HTTPError
-//	@Failure		500		{object}	HTTPError
+//	@Success		200
+//	@Failure		403
+//	@Failure		404
+//	@Failure		400
+//	@Failure		500
 //	@Router			/todos/{todoId}/attachments/{attachmentId} [get]
 func (server *Server) getTodoAttachment(ctx *gin.Context) {
 	var req getTodoAttachmentRequest
@@ -195,10 +194,10 @@ type getTodoAttachmentMetadataResponse struct {
 //	@Produce		json
 //	@Param			id	path		int	true	"Todo ID"          minimum(1)
 //	@Success		200		{object}	getTodoAttachmentMetadataResponse
-//	@Failure		403		{object}	HTTPError
-//	@Failure		404		{object}	HTTPError
-//	@Failure		400		{object}	HTTPError
-//	@Failure		500		{object}	HTTPError
+//	@Failure		403
+//	@Failure		404
+//	@Failure		400
+//	@Failure		500
 //	@Router			/todos/{id}/attachments [get]
 func (server *Server) getTodoAttachmentMetadata(ctx *gin.Context) {
 	var req getTodoAttachmentMetadataRequest
@@ -250,14 +249,13 @@ type deleteTodoAttachmentRequest struct {
 //	@Description	Delete attachment for the corresponding todo
 //	@Tags			attachments
 //	@Accept			json
-//	@Produce		json
 //	@Param			id	path		int	true	"Todo ID"          minimum(1)
 //	@Param			attachmentId	path		int	true	"attachment ID"          minimum(1)
-//	@Success		200		{object}	nil
-//	@Failure		413		{object}	HTTPError
-//	@Failure		404		{object}	HTTPError
-//	@Failure		400		{object}	HTTPError
-//	@Failure		500		{object}	HTTPError
+//	@Success		200
+//	@Failure		413
+//	@Failure		404
+//	@Failure		400
+//	@Failure		500
 //	@Router			/todos/{id}/attachments/{attachmentId} [delete]
 func (server *Server) deleteTodoAttachment(ctx *gin.Context) {
 	var req deleteTodoAttachmentRequest

@@ -18,12 +18,12 @@ type getTodoRequest struct {
 //	@Description	Get todo by TodoID
 //	@Tags			todos
 //	@Produce		json
-//	@Param			id path int true "Todo ID" minimum(1)
+//	@Param			todoId	path	int		true	"Todo ID"	minimum(1)
 //	@Success		200	{object}	db.Todo
-//	@Failure		400 {object}	HTTPError
-//	@Failure		404	{object}	ResourceNotFoundError
-//	@Failure		500	{object}	HTTPError
-//	@Router			/todos/{id} [get]
+//	@Failure		400
+//	@Failure		404
+//	@Failure		500
+//	@Router			/todos/{todoId} [get]
 func (server *Server) getTodo(ctx *gin.Context) {
 	var req getTodoRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -52,13 +52,13 @@ type createTodoRequest struct {
 //	@Produce		json
 //	@Param			todo	body	createTodoRequest true "Todo title"
 //	@Success		200	{object}	db.Todo
-//	@Failure		400 {object}	HTTPError
-//	@Failure		500	{object}	HTTPError
+//	@Failure		400
+//	@Failure		500
 //	@Router			/todos [post]
 func (server *Server) createTodo(ctx *gin.Context) {
 	var req createTodoRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		NewHTTPError(ctx, http.StatusBadRequest, todoTitleInvalidError)
+		NewHTTPError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -84,15 +84,14 @@ type listTodoRequest struct {
 //	@Summary		List todos
 //	@Description	List todos based on page ID and page size
 //	@Tags			todos
-//	@Accept			json
 //	@Produce		json
 //
 // @Param        pageId    query     int  true  "page ID"  minimum(1)
 // @Param        pageSize    query     int  true  "page size"  minimum(5) maximum(10)
 //
 //	@Success		200	{array}		db.Todo
-//	@Failure		400 {object}	HTTPError
-//	@Failure		500	{object}	HTTPError
+//	@Failure		400
+//	@Failure		500
 //	@Router			/todos [get]
 func (server *Server) listTodo(ctx *gin.Context) {
 	var req listTodoRequest
@@ -132,22 +131,22 @@ type updateTodoTitleRequestBody struct {
 //	@Param			id	path		int	true	"Todo ID"          minimum(1)
 //	@Param			todo	body	updateTodoTitleRequestBody true "Todo title"
 //	@Success		200	{object}	db.Todo
-//	@Failure		400 {object}	HTTPError
-//	@Failure		404	{object}	HTTPError
-//	@Failure		500	{object}	HTTPError
+//	@Failure		400
+//	@Failure		404
+//	@Failure		500
 //	@Router			/todos/{id}/title [post]
 func (server *Server) updateTodoTitle(ctx *gin.Context) {
 	// Bind ID
 	var reqURIParams updateTodoRequestURIParams
 	if err := ctx.ShouldBindUri(&reqURIParams); err != nil {
-		NewHTTPError(ctx, http.StatusBadRequest, todoIDInvalidError)
+		NewHTTPError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	// Bind Title
 	var reqBody updateTodoTitleRequestBody
 	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
-		NewHTTPError(ctx, http.StatusBadRequest, todoTitleInvalidError)
+		NewHTTPError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -185,9 +184,9 @@ type updateTodoStatusRequestBody struct {
 //	@Param			id	path		int	true	"Todo ID"          minimum(1)
 //	@Param			todo	body	updateTodoStatusRequestBody true "Todo status"
 //	@Success		200	{object}	db.Todo
-//	@Failure		400 {object}	HTTPError
-//	@Failure		404	{object}	HTTPError
-//	@Failure		500	{object}	HTTPError
+//	@Failure		400
+//	@Failure		404
+//	@Failure		500
 //	@Router			/todos/{id}/status [post]
 func (server *Server) updateTodoStatus(ctx *gin.Context) {
 	// Bind ID
@@ -235,12 +234,11 @@ type deleteTodoRequest struct {
 //	@Description	Delete todo by TodoID
 //	@Tags			todos
 //	@Accept			json
-//	@Produce		json
 //	@Param			id	path		int	true	"Todo ID"          minimum(1)
-//	@Success		200	{object} nil
-//	@Failure		400 {object}	HTTPError
-//	@Failure		404	{object}	HTTPError
-//	@Failure		500	{object}	HTTPError
+//	@Success		200
+//	@Failure		400
+//	@Failure		404
+//	@Failure		500
 //	@Router			/todos/{id} [delete]
 func (server *Server) deleteTodo(ctx *gin.Context) {
 	var req deleteTodoRequest
