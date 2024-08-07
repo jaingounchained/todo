@@ -573,7 +573,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Todo API",
-	Description:      "A todo management service API in GO which supports attachments",
+	Description:      "A todo management service API in go which supports attachments",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

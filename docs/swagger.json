@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "A todo management service API in GO which supports attachments",
+        "description": "A todo management service API in go which supports attachments",
         "title": "Todo API",
         "contact": {
             "name": "Bhavya Jain"

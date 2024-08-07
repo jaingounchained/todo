@@ -166,3 +166,5 @@ func (storage *LocalStorage) todoAbsoluteDirectory(todoID int64) string {
 func todoDirectoryName(todoID int64) string {
 	return fmt.Sprintf("%08d", todoID)
 }
+
+func (storage *LocalStorage) CloseConnection(ctx context.Context) {}

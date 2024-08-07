@@ -24,7 +24,7 @@ import (
 
 // @title     Todo API
 // @version         1.0
-// @description     A todo management service API in GO which supports attachments
+// @description     A todo management service API in go which supports attachments
 // @contact.name   Bhavya Jain
 // @host      localhost:8080
 // @BasePath  /
@@ -39,74 +39,78 @@ func main() {
 	}
 	defer logger.Sync()
 
-	logger.Info("Setup logger")
+	logger.Info("Logger setup")
 
 	// Load config
 	config, err := util.LoadConfig(".")
 	if err != nil {
-		logger.Fatal("Failed tp load config", zap.Error(err))
+		logger.Fatal("Failed to load config: ", zap.Error(err))
 	}
 
 	// Setup DB connection
 	connPool, err := pgxpool.New(context.Background(), config.DBSource)
 	if err != nil {
-		log.Fatal("cannot connect to db:", err)
+		logger.Fatal("Failed to connect to the db: ", zap.Error(err))
 	}
 
 	if err := connPool.Ping(context.Background()); err != nil {
-		log.Fatal("Cannot ping the db:", err)
-		os.Exit(1)
-	}
-
-	// Setup file storage
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var storage storage.Storage
-	if config.StorageType == "LOCAL" {
-		localStoragePath := filepath.Join(cwd, config.LocalStorageDirectory)
-		storage, err = localStorage.New(localStoragePath)
-		if err != nil {
-			done <- syscall.SIGTERM
-			logger.Error("cannot setup storage:", zap.Any("Error:", err))
-		}
+		logger.Fatal("Failed to ping the db: ", zap.Error(err))
 	}
 
 	store := db.NewStore(connPool)
 
-	// TODO: configure ginHandler to not limit the number of incoming bytes to ~10 MB: Give max memory to the gin engine
-	ginHandler := api.NewGinHandler(store, storage, logger)
-	httpServer := ginHandler.HttpServer(config.ServerAddress)
+	// Setup file storage
+	cwd, err := os.Getwd()
+	if err != nil {
+		logger.Fatal("Failed to calculate current working directory: ", zap.Error(err))
+	}
+
+	var storage storage.Storage
+	switch config.StorageType {
+	case "LOCAL":
+		localStoragePath := filepath.Join(cwd, config.LocalStorageDirectory)
+
+		storage, err = localStorage.New(localStoragePath)
+		if err != nil {
+			logger.Fatal("cannot setup file storage for the local storageType: ", zap.Error(err))
+		}
+	case "S3":
+		logger.Fatal("S3 file storage unimplemented")
+	default:
+		logger.Fatal("Invalid file storage type chosen")
+	}
 
 	// Initializing the http server
-	go startHTTPServer(httpServer)
+	httpServer := api.NewGinHandler(store, storage, logger).HttpServer(config.ServerAddress)
+	go startHTTPServer(logger, httpServer)
 
-	applicationShutdown(done, httpServer, connPool)
+	applicationShutdown(logger, done, httpServer, connPool, storage)
 }
 
-func applicationShutdown(done <-chan os.Signal, httpServer *http.Server, connPool *pgxpool.Pool) {
+func applicationShutdown(logger *zap.Logger, done <-chan os.Signal, httpServer *http.Server, connPool *pgxpool.Pool, storage storage.Storage) {
 	<-done
-	log.Println("Shutting down server...")
-
-	// Close all database connection etc
-	connPool.Close()
+	logger.Info("Shutting down server...")
 
 	// Server has 5 seconds to finish
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// Close all database connections
+	go connPool.Close()
+
+	// Close storage connections
+	go storage.CloseConnection(context.Background())
+
 	if err := httpServer.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+		logger.Error("Server forced to shutdown: ", zap.Error(err))
 	}
 
-	log.Println("Server exiting")
+	logger.Info("Server exiting...")
 }
 
-func startHTTPServer(httpServer *http.Server) {
-	log.Println("Starting HTTP server...")
+func startHTTPServer(logger *zap.Logger, httpServer *http.Server) {
+	logger.Info("Starting HTTP server...")
 	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Printf("error: %s\n", err)
+		logger.Error("", zap.Error(err))
 	}
 }

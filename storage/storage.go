@@ -11,4 +11,5 @@ type Storage interface {
 	SaveMultipleFilesSafely(ctx context.Context, todoID int64, fileContents FileContents) error
 	DeleteFile(ctx context.Context, todoID int64, fileName string) error
 	GetFileContents(ctx context.Context, todoID int64, fileName string) ([]byte, error)
+	CloseConnection(ctx context.Context)
 }

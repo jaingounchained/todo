@@ -35,6 +35,18 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
+// CloseConnection mocks base method.
+func (m *MockStorage) CloseConnection(arg0 context.Context) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "CloseConnection", arg0)
+}
+
+// CloseConnection indicates an expected call of CloseConnection.
+func (mr *MockStorageMockRecorder) CloseConnection(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseConnection", reflect.TypeOf((*MockStorage)(nil).CloseConnection), arg0)
+}
+
 // CreateTodoDirectory mocks base method.
 func (m *MockStorage) CreateTodoDirectory(arg0 context.Context, arg1 int64) error {
 	m.ctrl.T.Helper()

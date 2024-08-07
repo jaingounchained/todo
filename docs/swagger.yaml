@@ -49,7 +49,7 @@ host: localhost:8080
 info:
   contact:
     name: Bhavya Jain
-  description: A todo management service API in GO which supports attachments
+  description: A todo management service API in go which supports attachments
   title: Todo API
   version: "1.0"
 paths:
