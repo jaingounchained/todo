@@ -202,7 +202,7 @@ type getTodoAttachmentMetadataResponse struct {
 func (server *Server) getTodoAttachmentMetadata(ctx *gin.Context) {
 	var req getTodoAttachmentMetadataRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		NewHTTPError(ctx, http.StatusBadRequest, err)
+		NewHTTPError(ctx, http.StatusBadRequest, todoIDInvalidError)
 		return
 	}
 

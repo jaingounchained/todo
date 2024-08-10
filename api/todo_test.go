@@ -16,7 +16,7 @@ import (
 	db "github.com/jaingounchained/todo/db/sqlc"
 	mockStorage "github.com/jaingounchained/todo/storage/mock"
 	"github.com/jaingounchained/todo/util"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func RandomTodo() db.Todo {
@@ -28,45 +28,49 @@ func RandomTodo() db.Todo {
 	}
 }
 
-func requireBodyMatchTodo(t *testing.T, body *bytes.Buffer, todo db.Todo) {
+func assertBodyMatchTodo(t *testing.T, body *bytes.Buffer, todo db.Todo) {
 	data, err := io.ReadAll(body)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	var gotTodo db.Todo
 	err = json.Unmarshal(data, &gotTodo)
-	require.NoError(t, err)
-	require.Equal(t, todo, gotTodo)
+	assert.NoError(t, err)
+	assert.Equal(t, gotTodo, todo)
 }
 
-func requireBodyMatchTodos(t *testing.T, body *bytes.Buffer, todos []db.Todo) {
+func assertBodyMatchTodos(t *testing.T, body *bytes.Buffer, todos []db.Todo) {
 	data, err := io.ReadAll(body)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	var gotTodos []db.Todo
 	err = json.Unmarshal(data, &gotTodos)
-	require.NoError(t, err)
-	require.Equal(t, todos, gotTodos)
+	assert.NoError(t, err)
+	assert.Equal(t, gotTodos, todos)
 }
 
-func requireBodyMatchError(t *testing.T, body *bytes.Buffer, err error) {
+func assertBodyMatchError(t *testing.T, body *bytes.Buffer, expectedError error) {
 	data, err := io.ReadAll(body)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	var gotHTTPError HTTPError
 	err = json.Unmarshal(data, &gotHTTPError)
-	require.NoError(t, err)
-	require.NotNil(t, gotHTTPError)
-	require.Equal(t, err.Error(), gotHTTPError.Error())
+
+	assert.NoError(t, err)
+	assert.NotNil(t, gotHTTPError)
+	assert.Equal(t, gotHTTPError.Message, expectedError.Error())
 }
 
 func TestGetTodoAPI(t *testing.T) {
 	todo := RandomTodo()
 
 	tcs := []struct {
-		name          string
-		todoID        int64
-		buildDBStub   func(store *mockdb.MockStore)
-		checkResponse func(recorder *httptest.ResponseRecorder)
+		name               string
+		todoID             int64
+		buildDBStub        func(store *mockdb.MockStore)
+		checkOKResponse    func(recorder *httptest.ResponseRecorder)
+		errorExpected      bool
+		expectedError      error
+		checkErrorResponse func(recorder *httptest.ResponseRecorder, err error)
 	}{
 		{
 			name:   "OK",
@@ -77,9 +81,9 @@ func TestGetTodoAPI(t *testing.T) {
 					Times(1).
 					Return(todo, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchTodo(t, recorder.Body, todo)
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusOK, recorder.Code)
+				assertBodyMatchTodo(t, recorder.Body, todo)
 			},
 		},
 		{
@@ -91,8 +95,14 @@ func TestGetTodoAPI(t *testing.T) {
 					Times(1).
 					Return(db.Todo{}, db.ErrRecordNotFound)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusNotFound, recorder.Code)
+			errorExpected: true,
+			expectedError: &ResourceNotFoundError{
+				resourceType: "todo",
+				id:           todo.ID,
+			},
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, expectedError error) {
+				assert.Equal(t, http.StatusNotFound, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, expectedError)
 			},
 		},
 		{
@@ -104,8 +114,11 @@ func TestGetTodoAPI(t *testing.T) {
 					Times(1).
 					Return(db.Todo{}, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, expectedError error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, expectedError)
 			},
 		},
 		{
@@ -116,8 +129,11 @@ func TestGetTodoAPI(t *testing.T) {
 					GetTodo(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			expectedError: todoIDInvalidError,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, expectedError error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, expectedError)
 			},
 		},
 	}
@@ -136,11 +152,15 @@ func TestGetTodoAPI(t *testing.T) {
 
 			url := fmt.Sprintf("/todos/%d", tc.todoID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			server.router.ServeHTTP(recorder, request)
-			// check response
-			tc.checkResponse(recorder)
+			// check response/error
+			if tc.errorExpected {
+				tc.checkErrorResponse(recorder, tc.expectedError)
+			} else {
+				tc.checkOKResponse(recorder)
+			}
 		})
 	}
 }
@@ -149,10 +169,13 @@ func TestCreateTodoAPI(t *testing.T) {
 	todo := RandomTodo()
 
 	tcs := []struct {
-		name          string
-		body          gin.H
-		buildDBStub   func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage)
-		checkResponse func(recorder *httptest.ResponseRecorder)
+		name               string
+		body               gin.H
+		buildDBStub        func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage)
+		checkOKResponse    func(recorder *httptest.ResponseRecorder)
+		errorExpected      bool
+		expectedError      error
+		checkErrorResponse func(recorder *httptest.ResponseRecorder, err error)
 	}{
 		{
 			name: "OK",
@@ -169,9 +192,9 @@ func TestCreateTodoAPI(t *testing.T) {
 					Times(1).
 					Return(db.CreateTodoTxResult{Todo: todo}, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchTodo(t, recorder.Body, todo)
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusOK, recorder.Code)
+				assertBodyMatchTodo(t, recorder.Body, todo)
 			},
 		},
 		{
@@ -184,8 +207,9 @@ func TestCreateTodoAPI(t *testing.T) {
 					CreateTodoTx(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, expectedError error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -196,8 +220,9 @@ func TestCreateTodoAPI(t *testing.T) {
 					CreateTodoTx(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, expectedError error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -211,8 +236,11 @@ func TestCreateTodoAPI(t *testing.T) {
 					Times(1).
 					Return(db.CreateTodoTxResult{}, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, expectedError error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, expectedError)
 			},
 		},
 	}
@@ -233,14 +261,19 @@ func TestCreateTodoAPI(t *testing.T) {
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			url := "/todos"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			// check response/error
+			if tc.errorExpected {
+				tc.checkErrorResponse(recorder, tc.expectedError)
+			} else {
+				tc.checkOKResponse(recorder)
+			}
 		})
 	}
 }
@@ -258,11 +291,14 @@ func TestListTodoAPI(t *testing.T) {
 	}
 
 	tcs := []struct {
-		name          string
-		todoID        int64
-		query         Query
-		buildDBStub   func(store *mockdb.MockStore)
-		checkResponse func(recorder *httptest.ResponseRecorder)
+		name               string
+		todoID             int64
+		query              Query
+		buildDBStub        func(store *mockdb.MockStore)
+		checkOKResponse    func(recorder *httptest.ResponseRecorder)
+		errorExpected      bool
+		expectedError      error
+		checkErrorResponse func(recorder *httptest.ResponseRecorder, err error)
 	}{
 		{
 			name: "OK",
@@ -281,9 +317,9 @@ func TestListTodoAPI(t *testing.T) {
 					Times(1).
 					Return(todos, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchTodos(t, recorder.Body, todos)
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusOK, recorder.Code)
+				assertBodyMatchTodos(t, recorder.Body, todos)
 			},
 		},
 		{
@@ -298,8 +334,11 @@ func TestListTodoAPI(t *testing.T) {
 					Times(1).
 					Return([]db.Todo{}, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -313,8 +352,9 @@ func TestListTodoAPI(t *testing.T) {
 					ListTodos(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -328,8 +368,9 @@ func TestListTodoAPI(t *testing.T) {
 					ListTodos(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 	}
@@ -348,7 +389,7 @@ func TestListTodoAPI(t *testing.T) {
 
 			url := "/todos"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			// Add query parameters to response URL
 			q := request.URL.Query()
@@ -357,8 +398,12 @@ func TestListTodoAPI(t *testing.T) {
 			request.URL.RawQuery = q.Encode()
 
 			server.router.ServeHTTP(recorder, request)
-			// check response
-			tc.checkResponse(recorder)
+			// check response/error
+			if tc.errorExpected {
+				tc.checkErrorResponse(recorder, tc.expectedError)
+			} else {
+				tc.checkOKResponse(recorder)
+			}
 		})
 	}
 }
@@ -369,11 +414,14 @@ func TestUpdateTodoAPI(t *testing.T) {
 	updatedStatus := util.RandomStatus()
 
 	tcs := []struct {
-		name          string
-		todoID        int64
-		body          gin.H
-		buildDBStub   func(store *mockdb.MockStore)
-		checkResponse func(recorder *httptest.ResponseRecorder)
+		name               string
+		todoID             int64
+		body               gin.H
+		buildDBStub        func(store *mockdb.MockStore)
+		checkOKResponse    func(recorder *httptest.ResponseRecorder)
+		errorExpected      bool
+		expectedError      error
+		checkErrorResponse func(recorder *httptest.ResponseRecorder, err error)
 	}{
 		{
 			name:   "InvalidID",
@@ -381,8 +429,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			expectedError: todoIDInvalidError,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -394,12 +445,13 @@ func TestUpdateTodoAPI(t *testing.T) {
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
-			name:   "InvalidStatus",
+			name:   "InvalidStatusString",
 			todoID: todo.ID,
 			body: gin.H{
 				"status": util.RandomString(10),
@@ -407,8 +459,23 @@ func TestUpdateTodoAPI(t *testing.T) {
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name:   "InvalidStatusNumber",
+			todoID: todo.ID,
+			body: gin.H{
+				"status": util.RandomInt(1, 1000),
+			},
+			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
+			},
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -418,8 +485,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			expectedError: updateTodoTitleStatusInvalidBodyError,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -432,8 +502,14 @@ func TestUpdateTodoAPI(t *testing.T) {
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(1).Return(db.Todo{}, db.ErrRecordNotFound)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusNotFound, recorder.Code)
+			errorExpected: true,
+			expectedError: &ResourceNotFoundError{
+				resourceType: "todo",
+				id:           todo.ID,
+			},
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusNotFound, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -446,8 +522,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(1).Return(db.Todo{}, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -463,9 +542,9 @@ func TestUpdateTodoAPI(t *testing.T) {
 				}
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Eq(arg)).Times(1).Return(todo, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchTodo(t, recorder.Body, todo)
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusOK, recorder.Code)
+				assertBodyMatchTodo(t, recorder.Body, todo)
 			},
 		},
 		{
@@ -481,9 +560,9 @@ func TestUpdateTodoAPI(t *testing.T) {
 				}
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Eq(arg)).Times(1).Return(todo, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchTodo(t, recorder.Body, todo)
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusOK, recorder.Code)
+				assertBodyMatchTodo(t, recorder.Body, todo)
 			},
 		},
 		{
@@ -501,9 +580,9 @@ func TestUpdateTodoAPI(t *testing.T) {
 				}
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Eq(arg)).Times(1).Return(todo, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchTodo(t, recorder.Body, todo)
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusOK, recorder.Code)
+				assertBodyMatchTodo(t, recorder.Body, todo)
 			},
 		},
 	}
@@ -522,15 +601,19 @@ func TestUpdateTodoAPI(t *testing.T) {
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			url := fmt.Sprintf("/todos/%d", tc.todoID)
 			request, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			server.router.ServeHTTP(recorder, request)
-			// check response
-			tc.checkResponse(recorder)
+			// check response/error
+			if tc.errorExpected {
+				tc.checkErrorResponse(recorder, tc.expectedError)
+			} else {
+				tc.checkOKResponse(recorder)
+			}
 		})
 	}
 }
@@ -539,10 +622,13 @@ func TestDeleteTodoAPI(t *testing.T) {
 	todo := RandomTodo()
 
 	tcs := []struct {
-		name          string
-		todoID        int64
-		buildDBStub   func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage)
-		checkResponse func(recorder *httptest.ResponseRecorder)
+		name               string
+		todoID             int64
+		buildDBStub        func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage)
+		checkOKResponse    func(recorder *httptest.ResponseRecorder)
+		errorExpected      bool
+		expectedError      error
+		checkErrorResponse func(recorder *httptest.ResponseRecorder, err error)
 	}{
 		{
 			name:   "InvalidID",
@@ -551,8 +637,11 @@ func TestDeleteTodoAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Any()).Times(0)
 				store.EXPECT().DeleteTodoTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			expectedError: todoIDInvalidError,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -562,8 +651,14 @@ func TestDeleteTodoAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, db.ErrRecordNotFound)
 				store.EXPECT().DeleteTodoTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusNotFound, recorder.Code)
+			errorExpected: true,
+			expectedError: &ResourceNotFoundError{
+				resourceType: "todo",
+				id:           todo.ID,
+			},
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusNotFound, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -577,8 +672,11 @@ func TestDeleteTodoAPI(t *testing.T) {
 				}
 				store.EXPECT().DeleteTodoTx(gomock.Any(), gomock.Eq(arg)).Times(1).Return(sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -592,8 +690,8 @@ func TestDeleteTodoAPI(t *testing.T) {
 				}
 				store.EXPECT().DeleteTodoTx(gomock.Any(), gomock.Eq(arg)).Times(1).Return(nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
 	}
@@ -614,10 +712,16 @@ func TestDeleteTodoAPI(t *testing.T) {
 
 			url := fmt.Sprintf("/todos/%d", tc.todoID)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			// check response/error
+			if tc.errorExpected {
+				tc.checkErrorResponse(recorder, tc.expectedError)
+			} else {
+				tc.checkOKResponse(recorder)
+			}
+
 		})
 	}
 }

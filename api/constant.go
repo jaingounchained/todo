@@ -7,4 +7,6 @@ const (
 	MultipartFormDataHeader     = "multipart/form-data"
 	FileSizeLimit               = 2 << 20
 	ContentType                 = "Content-Type"
+	ResourceTodo                = "todo"
+	ResourceAttachment          = "attachment"
 )

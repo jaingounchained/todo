@@ -20,7 +20,7 @@ import (
 	"github.com/jaingounchained/todo/storage"
 	mockStorage "github.com/jaingounchained/todo/storage/mock"
 	"github.com/jaingounchained/todo/util"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func RandomAttachment() db.Attachment {
@@ -41,17 +41,17 @@ func RandomAttachmentOfTodo(todo db.Todo) db.Attachment {
 	}
 }
 
-func requireBodyMatchAttachment(t *testing.T, body *bytes.Buffer, attachment db.Attachment) {
+func assertBodyMatchAttachment(t *testing.T, body *bytes.Buffer, attachment db.Attachment) {
 	data, err := io.ReadAll(body)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	var gotAttachment db.Attachment
 	err = json.Unmarshal(data, &gotAttachment)
-	require.NoError(t, err)
-	require.Equal(t, attachment, gotAttachment)
+	assert.NoError(t, err)
+	assert.Equal(t, attachment, gotAttachment)
 }
 
-func requireBodyMatchAttachmentsMetadata(t *testing.T, body *bytes.Buffer, attachments []db.Attachment) {
+func assertBodyMatchAttachmentsMetadata(t *testing.T, body *bytes.Buffer, attachments []db.Attachment) {
 	expectedAttachmentMetadataResponse := make([]getTodoAttachmentMetadataResponse, 0)
 	for _, attachment := range attachments {
 		expectedAttachmentMetadataResponse = append(expectedAttachmentMetadataResponse, getTodoAttachmentMetadataResponse{
@@ -62,12 +62,12 @@ func requireBodyMatchAttachmentsMetadata(t *testing.T, body *bytes.Buffer, attac
 	}
 
 	data, err := io.ReadAll(body)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	var gotAttachments []getTodoAttachmentMetadataResponse
 	err = json.Unmarshal(data, &gotAttachments)
-	require.NoError(t, err)
-	require.Equal(t, expectedAttachmentMetadataResponse, gotAttachments)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedAttachmentMetadataResponse, gotAttachments)
 }
 
 func TestUploadTodoAttachmentsAPI(t *testing.T) {
@@ -80,6 +80,8 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 	todoWithFileCount4 := RandomTodo()
 	todoWithFileCount4.FileCount = 4
 
+	randomMimeType := util.RandomString(10)
+
 	type File struct {
 		fileName     string
 		fileMimeType string
@@ -87,12 +89,15 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 	}
 
 	tcs := []struct {
-		name          string
-		todoID        int64
-		fieldName     string
-		files         []File
-		buildDBStub   func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage, fileContents storage.FileContents)
-		checkResponse func(recorder *httptest.ResponseRecorder)
+		name               string
+		todoID             int64
+		fieldName          string
+		files              []File
+		buildDBStub        func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage, fileContents storage.FileContents)
+		checkOKResponse    func(recorder *httptest.ResponseRecorder)
+		errorExpected      bool
+		expectedError      error
+		checkErrorResponse func(recorder *httptest.ResponseRecorder, err error)
 	}{
 		{
 			name:   "InvalidID",
@@ -101,8 +106,11 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Any()).Times(0)
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			expectedError: todoIDInvalidError,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -112,8 +120,14 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, db.ErrRecordNotFound)
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusNotFound, recorder.Code)
+			errorExpected: true,
+			expectedError: &ResourceNotFoundError{
+				resourceType: "todo",
+				id:           todo.ID,
+			},
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusNotFound, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -123,8 +137,11 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, sql.ErrConnDone)
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -134,8 +151,11 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todoWithMaxFileCount.ID)).Times(1).Return(todoWithMaxFileCount, nil)
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusForbidden, recorder.Code)
+			errorExpected: true,
+			expectedError: newTodoAttachmentLimitReachedError(int(todoWithMaxFileCount.FileCount)),
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusForbidden, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -152,8 +172,11 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusRequestEntityTooLarge, recorder.Code)
+			errorExpected: true,
+			expectedError: uploadAttachmentAPIContentLengthLimitError,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusRequestEntityTooLarge, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -171,8 +194,11 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			expectedError: attachmentKeyEmptyError,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -195,8 +221,11 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todoWithFileCount4.ID)).Times(1).Return(todoWithFileCount4, nil)
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusRequestEntityTooLarge, recorder.Code)
+			errorExpected: true,
+			expectedError: newTodoAttachmentLimitReachedError(2),
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusRequestEntityTooLarge, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -211,7 +240,7 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				},
 				{
 					fileName:     "example.zip",
-					fileMimeType: util.RandomString(10),
+					fileMimeType: randomMimeType,
 					fileContents: []byte(util.RandomString(100)),
 				},
 			},
@@ -219,8 +248,11 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusUnsupportedMediaType, recorder.Code)
+			errorExpected: true,
+			expectedError: newInvalidMimeTypeError("example.zip", randomMimeType),
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusUnsupportedMediaType, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -243,8 +275,11 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusRequestEntityTooLarge, recorder.Code)
+			errorExpected: true,
+			expectedError: newFileSizeTooLargeError("example.txt", FileSizeLimit),
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusRequestEntityTooLarge, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -272,8 +307,11 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				}
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Eq(arg)).Times(1).Return(sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -301,8 +339,8 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				}
 				store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Eq(arg)).Times(1).Return(nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
 	}
@@ -335,23 +373,28 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 				header.Set("Content-Type", file.fileMimeType)
 
 				partWriter, err := multipartWriter.CreatePart(header)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				_, err = partWriter.Write(file.fileContents)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 
 			err := multipartWriter.Close()
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			url := fmt.Sprintf("/todos/%d/attachments", tc.todoID)
 			request, err := http.NewRequest(http.MethodPost, url, &requestBody)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			request.Header.Set("Content-Type", multipartWriter.FormDataContentType())
 
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			// check response/error
+			if tc.errorExpected {
+				tc.checkErrorResponse(recorder, tc.expectedError)
+			} else {
+				tc.checkOKResponse(recorder)
+			}
 		})
 	}
 
@@ -373,16 +416,17 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 
 		// Marshal body data to JSON
 		data, err := json.Marshal(&gin.H{})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		url := fmt.Sprintf("/todos/%d/attachments", todo.ID)
 		request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		request.Header.Set("Content-Type", util.RandomString(10))
 
 		server.router.ServeHTTP(recorder, request)
-		require.Equal(t, http.StatusBadRequest, recorder.Code)
+		assert.Equal(t, http.StatusBadRequest, recorder.Code)
+		assertBodyMatchError(t, recorder.Body, invalidHeaderContentTypeError)
 	})
 }
 
@@ -395,12 +439,15 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 	fileContents := []byte(util.RandomString(100))
 
 	tcs := []struct {
-		name             string
-		todoID           int64
-		attachmentID     int64
-		buildDBStub      func(store *mockdb.MockStore)
-		buildStorageStub func(mockStorage *mockStorage.MockStorage)
-		checkResponse    func(recorder *httptest.ResponseRecorder)
+		name               string
+		todoID             int64
+		attachmentID       int64
+		buildDBStub        func(store *mockdb.MockStore)
+		buildStorageStub   func(mockStorage *mockStorage.MockStorage)
+		checkOKResponse    func(recorder *httptest.ResponseRecorder)
+		errorExpected      bool
+		expectedError      error
+		checkErrorResponse func(recorder *httptest.ResponseRecorder, err error)
 	}{
 		{
 			name:         "InvalidTodoID",
@@ -414,8 +461,9 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 					GetFileContents(gomock.Any(), gomock.Eq(todo.ID), gomock.Eq(attachmentWithTodo.StorageFilename)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -430,8 +478,9 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 					GetFileContents(gomock.Any(), gomock.Eq(todo.ID), gomock.Eq(attachmentWithTodo.StorageFilename)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -446,8 +495,14 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 					GetFileContents(gomock.Any(), gomock.Eq(todo.ID), gomock.Eq(attachmentWithTodo.StorageFilename)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusNotFound, recorder.Code)
+			errorExpected: true,
+			expectedError: &ResourceNotFoundError{
+				resourceType: "attachment",
+				id:           attachment.ID,
+			},
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusNotFound, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -462,8 +517,11 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 					GetFileContents(gomock.Any(), gomock.Eq(todo.ID), gomock.Eq(attachmentWithTodo.StorageFilename)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -478,8 +536,11 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 					GetFileContents(gomock.Any(), gomock.Eq(todo.ID), gomock.Eq(attachmentWithTodo.StorageFilename)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusForbidden, recorder.Code)
+			errorExpected: true,
+			expectedError: newAttachmentNotAssociatedWithTodoError(todo.ID, attachment.ID),
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusForbidden, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -495,8 +556,9 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 					Times(1).
 					Return(nil, errors.New("storage failure"))
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 		{
@@ -512,11 +574,11 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 					Times(1).
 					Return(fileContents, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusOK, recorder.Code)
 				data, err := io.ReadAll(recorder.Body)
-				require.NoError(t, err)
-				require.Equal(t, data, fileContents)
+				assert.NoError(t, err)
+				assert.Equal(t, data, fileContents)
 			},
 		},
 	}
@@ -538,10 +600,16 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 
 			url := fmt.Sprintf("/todos/%d/attachments/%d", tc.todoID, tc.attachmentID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			// check response/error
+			if tc.errorExpected {
+				tc.checkErrorResponse(recorder, tc.expectedError)
+			} else {
+				tc.checkOKResponse(recorder)
+			}
+
 		})
 	}
 }
@@ -554,10 +622,13 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 	attachment2.TodoID = todo.ID
 
 	tcs := []struct {
-		name          string
-		todoID        int64
-		buildDBStub   func(store *mockdb.MockStore)
-		checkResponse func(recorder *httptest.ResponseRecorder)
+		name               string
+		todoID             int64
+		buildDBStub        func(store *mockdb.MockStore)
+		checkOKResponse    func(recorder *httptest.ResponseRecorder)
+		errorExpected      bool
+		expectedError      error
+		checkErrorResponse func(recorder *httptest.ResponseRecorder, err error)
 	}{
 		{
 			name:   "InvalidTodoID",
@@ -566,8 +637,11 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Any()).Times(0)
 				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			expectedError: todoIDInvalidError,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -577,8 +651,14 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, db.ErrRecordNotFound)
 				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusNotFound, recorder.Code)
+			errorExpected: true,
+			expectedError: &ResourceNotFoundError{
+				resourceType: "todo",
+				id:           todo.ID,
+			},
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusNotFound, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -588,8 +668,11 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, sql.ErrConnDone)
 				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -599,8 +682,14 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return([]db.Attachment{}, db.ErrRecordNotFound)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusNotFound, recorder.Code)
+			errorExpected: true,
+			expectedError: &ResourceNotFoundError{
+				resourceType: "attachment",
+				id:           todo.ID,
+			},
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusNotFound, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -610,8 +699,11 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return([]db.Attachment{}, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -621,9 +713,9 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().ListAttachmentOfTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return([]db.Attachment{attachment1, attachment2}, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchAttachmentsMetadata(t, recorder.Body, []db.Attachment{attachment1, attachment2})
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusOK, recorder.Code)
+				assertBodyMatchAttachmentsMetadata(t, recorder.Body, []db.Attachment{attachment1, attachment2})
 			},
 		},
 	}
@@ -642,10 +734,16 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 
 			url := fmt.Sprintf("/todos/%d/attachments", tc.todoID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			// check response/error
+			if tc.errorExpected {
+				tc.checkErrorResponse(recorder, tc.expectedError)
+			} else {
+				tc.checkOKResponse(recorder)
+			}
+
 		})
 	}
 }
@@ -657,11 +755,14 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 	attachmentWithTodo := RandomAttachmentOfTodo(todo)
 
 	tcs := []struct {
-		name          string
-		todoID        int64
-		attachmentID  int64
-		buildDBStub   func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage)
-		checkResponse func(recorder *httptest.ResponseRecorder)
+		name               string
+		todoID             int64
+		attachmentID       int64
+		buildDBStub        func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage)
+		checkOKResponse    func(recorder *httptest.ResponseRecorder)
+		errorExpected      bool
+		expectedError      error
+		checkErrorResponse func(recorder *httptest.ResponseRecorder, err error)
 	}{
 		{
 			name:   "InvalidTodoID",
@@ -670,8 +771,9 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 				store.EXPECT().GetAttachment(gomock.Any(), gomock.Any()).Times(0)
 				store.EXPECT().DeleteAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -682,8 +784,9 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 				store.EXPECT().GetAttachment(gomock.Any(), gomock.Any()).Times(0)
 				store.EXPECT().DeleteAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			errorExpected: true,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
@@ -694,8 +797,14 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 				store.EXPECT().GetAttachment(gomock.Any(), gomock.Eq(attachment.ID)).Times(1).Return(db.Attachment{}, db.ErrRecordNotFound)
 				store.EXPECT().DeleteAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusNotFound, recorder.Code)
+			errorExpected: true,
+			expectedError: &ResourceNotFoundError{
+				resourceType: "attachment",
+				id:           attachment.ID,
+			},
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusNotFound, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -706,8 +815,11 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 				store.EXPECT().GetAttachment(gomock.Any(), gomock.Eq(attachment.ID)).Times(1).Return(db.Attachment{}, sql.ErrConnDone)
 				store.EXPECT().DeleteAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -718,8 +830,11 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 				store.EXPECT().GetAttachment(gomock.Any(), gomock.Eq(attachment.ID)).Times(1).Return(attachment, nil)
 				store.EXPECT().DeleteAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusForbidden, recorder.Code)
+			errorExpected: true,
+			expectedError: newAttachmentNotAssociatedWithTodoError(todo.ID, attachment.ID),
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusForbidden, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -733,10 +848,13 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 					Attachment: attachmentWithTodo,
 					Storage:    mockStorage,
 				}
-				store.EXPECT().DeleteAttachmentTx(gomock.Any(), gomock.Eq(arg)).Times(1).Return(errors.New("Delete todo tx error"))
+				store.EXPECT().DeleteAttachmentTx(gomock.Any(), gomock.Eq(arg)).Times(1).Return(sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			errorExpected: true,
+			expectedError: sql.ErrConnDone,
+			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
+				assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertBodyMatchError(t, recorder.Body, err)
 			},
 		},
 		{
@@ -752,8 +870,8 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 				}
 				store.EXPECT().DeleteAttachmentTx(gomock.Any(), gomock.Eq(arg)).Times(1).Return(nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
 	}
@@ -774,10 +892,16 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 
 			url := fmt.Sprintf("/todos/%d/attachments/%d", tc.todoID, tc.attachmentID)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
+			// check response/error
+			if tc.errorExpected {
+				tc.checkErrorResponse(recorder, tc.expectedError)
+			} else {
+				tc.checkOKResponse(recorder)
+			}
+
 		})
 	}
 }

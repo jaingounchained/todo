@@ -42,6 +42,18 @@ func newAttachmentNotAssociatedWithTodoError(todoID, attachmentID int64) attachm
 	return fmt.Errorf("attachment %d is not associated with the todo %d", attachmentID, todoID)
 }
 
+type invalidMimeTypeError error
+
+func newInvalidMimeTypeError(filename, mimeType string) invalidMimeTypeError {
+	return fmt.Errorf("%s file of invalid mime type: %s", filename, mimeType)
+}
+
+type fileSizeTooLargeError error
+
+func newFileSizeTooLargeError(filename string, fileSizeLimit int64) fileSizeTooLargeError {
+	return fmt.Errorf("%s file size too large, must e < %d MB", filename, fileSizeLimit/1024/1024)
+}
+
 func NewHTTPError(ctx *gin.Context, status int, err error) {
 	er := &HTTPError{
 		Message: err.Error(),
