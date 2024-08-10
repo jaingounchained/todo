@@ -211,14 +211,6 @@ func (server *Server) deleteTodo(ctx *gin.Context) {
 		Storage: server.storage,
 	})
 	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			NewHTTPError(ctx, http.StatusNotFound, &ResourceNotFoundError{
-				resourceType: "todo",
-				id:           req.TodoID,
-			})
-			return
-		}
-
 		NewHTTPError(ctx, http.StatusInternalServerError, err)
 		return
 	}

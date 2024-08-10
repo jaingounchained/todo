@@ -13,6 +13,7 @@ import (
 	"net/textproto"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	mockdb "github.com/jaingounchained/todo/db/mock"
 	db "github.com/jaingounchained/todo/db/sqlc"
@@ -353,6 +354,36 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 			tc.checkResponse(recorder)
 		})
 	}
+
+	// Request Content-Type is not multipart form data
+	t.Run("ContentTypeNotMultipartFormData", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockStorage := mockStorage.NewMockStorage(ctrl)
+
+		store := mockdb.NewMockStore(ctrl)
+		// Build stubs
+		store.EXPECT().GetTodo(gomock.Any(), gomock.Any()).Times(0)
+		store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
+
+		// start test server and send request
+		server := NewGinHandler(store, mockStorage, nil)
+		recorder := httptest.NewRecorder()
+
+		// Marshal body data to JSON
+		data, err := json.Marshal(&gin.H{})
+		require.NoError(t, err)
+
+		url := fmt.Sprintf("/todos/%d/attachments", todo.ID)
+		request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+		require.NoError(t, err)
+
+		request.Header.Set("Content-Type", util.RandomString(10))
+
+		server.router.ServeHTTP(recorder, request)
+		require.Equal(t, http.StatusBadRequest, recorder.Code)
+	})
 }
 
 func TestGetTodoAttachmentAPI(t *testing.T) {
