@@ -22,12 +22,12 @@ import (
 	"go.uber.org/zap"
 )
 
-// @title     Todo API
-// @version         1.0
-// @description     A todo management service API in go which supports attachments
-// @contact.name   Bhavya Jain
-// @host      localhost:8080
-// @BasePath  /
+//	@title			Todo API
+//	@version		1.0
+//	@description	A todo management service API in go which supports attachments
+//	@contact.name	Bhavya Jain
+//	@host			localhost:8080
+//	@BasePath		/
 func main() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)

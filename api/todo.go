@@ -18,8 +18,8 @@ type getTodoRequest struct {
 //	@Description	Get todo by TodoID
 //	@Tags			todos
 //	@Produce		json
-//	@Param			todoId	path	int		true	"Todo ID"	minimum(1)
-//	@Success		200	{object}	db.Todo
+//	@Param			todoId	path		int	true	"Todo ID"	minimum(1)
+//	@Success		200		{object}	db.Todo
 //	@Failure		400
 //	@Failure		404
 //	@Failure		500
@@ -50,8 +50,8 @@ type createTodoRequest struct {
 //	@Tags			todos
 //	@Accept			json
 //	@Produce		json
-//	@Param			todo	body	createTodoRequest true "Todo title"
-//	@Success		200	{object}	db.Todo
+//	@Param			todo	body		createTodoRequest	true	"Todo title"
+//	@Success		200		{object}	db.Todo
 //	@Failure		400
 //	@Failure		500
 //	@Router			/todos [post]
@@ -86,10 +86,10 @@ type listTodoRequest struct {
 //	@Tags			todos
 //	@Produce		json
 //
-// @Param        pageId    query     int  true  "page ID"  minimum(1)
-// @Param        pageSize    query     int  true  "page size"  minimum(5) maximum(10)
+//	@Param			pageId		query	int	true	"page ID"	minimum(1)
+//	@Param			pageSize	query	int	true	"page size"	minimum(5)	maximum(10)
 //
-//	@Success		200	{array}		db.Todo
+//	@Success		200			{array}	db.Todo
 //	@Failure		400
 //	@Failure		500
 //	@Router			/todos [get]
@@ -129,9 +129,9 @@ type updateTodoRequestBody struct {
 //	@Tags			todos
 //	@Accept			json
 //	@Produce		json
-//	@Param			todoId	path		int	true	"Todo ID"          minimum(1)
-//	@Param			todo	body	updateTodoRequestBody true "Todo title/status"
-//	@Success		200	{object}	db.Todo
+//	@Param			todoId	path		int						true	"Todo ID"	minimum(1)
+//	@Param			todo	body		updateTodoRequestBody	true	"Todo title/status"
+//	@Success		200		{object}	db.Todo
 //	@Failure		400
 //	@Failure		404
 //	@Failure		500
@@ -188,7 +188,7 @@ type deleteTodoRequest struct {
 //	@Description	Delete todo by TodoID
 //	@Tags			todos
 //	@Accept			json
-//	@Param			todoId	path		int	true	"Todo ID"          minimum(1)
+//	@Param			todoId	path	int	true	"Todo ID"	minimum(1)
 //	@Success		200
 //	@Failure		400
 //	@Failure		404

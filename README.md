@@ -62,7 +62,7 @@ curl -X 'POST' \
 curl http://localhost:8080/todos?page_id=1&page_size=5
 ```
 
-**Note**: openAPI spec is accessible via `http://localhost:8080/docs/index.html` after starting the app
+**Note**: openAPI spec is accessible via `http://localhost:8080/swagger/index.html` after starting the app
 
 ## Running tests
 

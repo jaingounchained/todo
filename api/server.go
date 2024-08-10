@@ -59,7 +59,7 @@ func (server *Server) setupRouter(l *zap.Logger) {
 }
 
 func (server *Server) setupSwagger(router *gin.Engine) {
-	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
 func (server *Server) setupGetResourceRouters(router *gin.Engine) {

@@ -21,7 +21,7 @@ type uploadTodoAttachmentsRequest struct {
 //	@Description	Upload attachments for the corresponding todo
 //	@Tags			attachments
 //	@Accept			multipart/form-data
-//	@Param			id	path		int	true	"Todo ID"          minimum(1)
+//	@Param			id			path		int		true	"Todo ID"	minimum(1)
 //	@Param			attachments	formData	[]file	true	"attachments"
 //	@Success		200
 //	@Failure		403
@@ -136,8 +136,8 @@ type getTodoAttachmentRequest struct {
 //	@Tags			attachments
 //	@Accept			json
 //	@Produce		application/octet-stream
-//	@Param			todoId	path		int	true	"Todo ID"          minimum(1)
-//	@Param			attachmentId	path		int	true	"attachment ID"          minimum(1)
+//	@Param			todoId			path	int	true	"Todo ID"		minimum(1)
+//	@Param			attachmentId	path	int	true	"attachment ID"	minimum(1)
 //	@Success		200
 //	@Failure		403
 //	@Failure		404
@@ -192,8 +192,8 @@ type getTodoAttachmentMetadataResponse struct {
 //	@Tags			attachments
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		int	true	"Todo ID"          minimum(1)
-//	@Success		200		{object}	getTodoAttachmentMetadataResponse
+//	@Param			id	path		int	true	"Todo ID"	minimum(1)
+//	@Success		200	{object}	getTodoAttachmentMetadataResponse
 //	@Failure		403
 //	@Failure		404
 //	@Failure		400
@@ -249,8 +249,8 @@ type deleteTodoAttachmentRequest struct {
 //	@Description	Delete attachment for the corresponding todo
 //	@Tags			attachments
 //	@Accept			json
-//	@Param			id	path		int	true	"Todo ID"          minimum(1)
-//	@Param			attachmentId	path		int	true	"attachment ID"          minimum(1)
+//	@Param			id				path	int	true	"Todo ID"		minimum(1)
+//	@Param			attachmentId	path	int	true	"attachment ID"	minimum(1)
 //	@Success		200
 //	@Failure		413
 //	@Failure		404
