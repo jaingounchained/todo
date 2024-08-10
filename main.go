@@ -70,7 +70,7 @@ func main() {
 	case "LOCAL":
 		localStoragePath := filepath.Join(cwd, config.LocalStorageDirectory)
 
-		storage, err = localStorage.New(localStoragePath)
+		storage, err = localStorage.New(logger, localStoragePath)
 		if err != nil {
 			logger.Fatal("cannot setup file storage for the local storageType: ", zap.Error(err))
 		}

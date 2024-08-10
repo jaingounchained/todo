@@ -47,38 +47,63 @@ func TestGetTodo(t *testing.T) {
 	compareTodos(t, todo1, todo2)
 }
 
-func TestUpdateTodoTitle(t *testing.T) {
-	todo1 := createRandomTodo(t)
-
-	updatedTitle := util.RandomString(10)
-	arg := UpdateTodoTitleParams{
-		ID:    todo1.ID,
-		Title: updatedTitle,
+func TestUpdateTodoTitleStatus(t *testing.T) {
+	tcs := []struct {
+		name          string
+		todo          Todo
+		updatedTitle  *string
+		updatedStatus *string
+	}{
+		{
+			name:          "UpdateTitleAndStatus",
+			todo:          createRandomTodo(t),
+			updatedTitle:  util.RandomStringPointer(10),
+			updatedStatus: util.RandomStatusPointer(),
+		},
+		{
+			name:          "UpdateTitleOnly",
+			todo:          createRandomTodo(t),
+			updatedTitle:  util.RandomStringPointer(10),
+			updatedStatus: nil,
+		},
+		{
+			name:          "UpdateStatusOnly",
+			todo:          createRandomTodo(t),
+			updatedTitle:  nil,
+			updatedStatus: util.RandomStatusPointer(),
+		},
+		{
+			name:          "NoUpdate",
+			todo:          createRandomTodo(t),
+			updatedTitle:  nil,
+			updatedStatus: nil,
+		},
 	}
 
-	todo2, err := testStore.UpdateTodoTitle(context.Background(), arg)
-	require.NoError(t, err)
-	require.NotEmpty(t, todo2)
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			arg := UpdateTodoTitleStatusParams{
+				ID:     tc.todo.ID,
+				Title:  tc.updatedTitle,
+				Status: tc.updatedStatus,
+			}
 
-	todo1.Title = updatedTitle
-	compareTodos(t, todo1, todo2)
-}
+			todo2, err := testStore.UpdateTodoTitleStatus(context.Background(), arg)
 
-func TestUpdateTodoStatus(t *testing.T) {
-	todo1 := createRandomTodo(t)
+			require.NoError(t, err)
+			require.NotEmpty(t, todo2)
 
-	updatedStatus := "complete"
-	arg := UpdateTodoStatusParams{
-		ID:     todo1.ID,
-		Status: updatedStatus,
+			if tc.updatedTitle != nil {
+				tc.todo.Title = *tc.updatedTitle
+			}
+
+			if tc.updatedStatus != nil {
+				tc.todo.Status = *tc.updatedStatus
+			}
+
+			compareTodos(t, todo2, tc.todo)
+		})
 	}
-
-	todo2, err := testStore.UpdateTodoStatus(context.Background(), arg)
-	require.NoError(t, err)
-	require.NotEmpty(t, todo2)
-
-	todo1.Status = updatedStatus
-	compareTodos(t, todo1, todo2)
 }
 
 func TestUpdateTodoFileCount(t *testing.T) {

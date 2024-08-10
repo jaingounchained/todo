@@ -15,15 +15,10 @@ ORDER BY id
 LIMIT $1
 OFFSET $2;
 
--- name: UpdateTodoTitle :one
+-- name: UpdateTodoTitleStatus :one
 UPDATE todos
-SET title = $2
-WHERE id = $1
-RETURNING *;
-
--- name: UpdateTodoStatus :one
-UPDATE todos
-SET status = $2
+SET title = COALESCE(sqlc.narg(title), title),
+    status = COALESCE(sqlc.narg(status), status)
 WHERE id = $1
 RETURNING *;
 

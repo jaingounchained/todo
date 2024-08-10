@@ -83,11 +83,8 @@ func (server *Server) setupCreateResourceRouters(router *gin.Engine) {
 }
 
 func (server *Server) setupUpdateResourceRouters(router *gin.Engine) {
-	// Update todo title
-	router.POST("/todos/:todoId/title", server.updateTodoTitle)
-
-	// Update todo status
-	router.POST("/todos/:todoId/status", server.updateTodoStatus)
+	// Update todo title or status
+	router.PATCH("/todos/:todoId", server.updateTodoTitleStatus)
 }
 
 func (server *Server) setupDeleteResourceRouters(router *gin.Engine) {

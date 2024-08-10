@@ -121,45 +121,22 @@ func (q *Queries) UpdateTodoFileCount(ctx context.Context, arg UpdateTodoFileCou
 	return i, err
 }
 
-const updateTodoStatus = `-- name: UpdateTodoStatus :one
+const updateTodoTitleStatus = `-- name: UpdateTodoTitleStatus :one
 UPDATE todos
-SET status = $2
+SET title = COALESCE($2, title),
+    status = COALESCE($3, status)
 WHERE id = $1
 RETURNING id, title, status, created_at, file_count
 `
 
-type UpdateTodoStatusParams struct {
-	ID     int64  `json:"todoId"`
-	Status string `json:"status"`
+type UpdateTodoTitleStatusParams struct {
+	ID     int64   `json:"todoId"`
+	Title  *string `json:"title"`
+	Status *string `json:"status"`
 }
 
-func (q *Queries) UpdateTodoStatus(ctx context.Context, arg UpdateTodoStatusParams) (Todo, error) {
-	row := q.db.QueryRow(ctx, updateTodoStatus, arg.ID, arg.Status)
-	var i Todo
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Status,
-		&i.CreatedAt,
-		&i.FileCount,
-	)
-	return i, err
-}
-
-const updateTodoTitle = `-- name: UpdateTodoTitle :one
-UPDATE todos
-SET title = $2
-WHERE id = $1
-RETURNING id, title, status, created_at, file_count
-`
-
-type UpdateTodoTitleParams struct {
-	ID    int64  `json:"todoId"`
-	Title string `json:"title"`
-}
-
-func (q *Queries) UpdateTodoTitle(ctx context.Context, arg UpdateTodoTitleParams) (Todo, error) {
-	row := q.db.QueryRow(ctx, updateTodoTitle, arg.ID, arg.Title)
+func (q *Queries) UpdateTodoTitleStatus(ctx context.Context, arg UpdateTodoTitleStatusParams) (Todo, error) {
+	row := q.db.QueryRow(ctx, updateTodoTitleStatus, arg.ID, arg.Title, arg.Status)
 	var i Todo
 	err := row.Scan(
 		&i.ID,

@@ -14,6 +14,7 @@ var (
 	invalidHeaderContentTypeError              = fmt.Errorf("Request %s isn't %s", ContentType, MultipartFormDataHeader)
 	attachmentKeyEmptyError                    = fmt.Errorf("No files present in '%s' key", UploadAttachmentFormFileKey)
 	noAttachmentsPresentForTheTodo             = errors.New("No attachments present for the todo")
+	updateTodoTitleStatusInvalidBodyError      = errors.New("At least one of 'title' or 'status' must be provided for update")
 	// todoTitleInvalidError                      = errors.New("Invalid todoTitle; todoTitle must be a string of length < 256")
 	// pageIDInvalidError                         = errors.New("Invalid pageId; pageId must be a valid integer > 0")
 	// pageSizeInvalidError                       = errors.New("Invalid pageSize; pageSize must be a valid integer >= 5 & <= 10")
@@ -42,7 +43,7 @@ func newAttachmentNotAssociatedWithTodoError(todoID, attachmentID int64) attachm
 }
 
 func NewHTTPError(ctx *gin.Context, status int, err error) {
-	er := HTTPError{
+	er := &HTTPError{
 		Message: err.Error(),
 	}
 	ctx.JSON(status, er)
@@ -52,7 +53,6 @@ type HTTPError struct {
 	Message string `json:"message" example:"generic error"`
 }
 
-// Error implements the error interface for ErrInvalidInput.
 func (e *HTTPError) Error() string {
 	return e.Error()
 }

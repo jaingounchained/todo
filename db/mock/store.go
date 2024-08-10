@@ -225,34 +225,19 @@ func (mr *MockStoreMockRecorder) UpdateTodoFileCount(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTodoFileCount", reflect.TypeOf((*MockStore)(nil).UpdateTodoFileCount), arg0, arg1)
 }
 
-// UpdateTodoStatus mocks base method.
-func (m *MockStore) UpdateTodoStatus(arg0 context.Context, arg1 db.UpdateTodoStatusParams) (db.Todo, error) {
+// UpdateTodoTitleStatus mocks base method.
+func (m *MockStore) UpdateTodoTitleStatus(arg0 context.Context, arg1 db.UpdateTodoTitleStatusParams) (db.Todo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateTodoStatus", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpdateTodoTitleStatus", arg0, arg1)
 	ret0, _ := ret[0].(db.Todo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UpdateTodoStatus indicates an expected call of UpdateTodoStatus.
-func (mr *MockStoreMockRecorder) UpdateTodoStatus(arg0, arg1 interface{}) *gomock.Call {
+// UpdateTodoTitleStatus indicates an expected call of UpdateTodoTitleStatus.
+func (mr *MockStoreMockRecorder) UpdateTodoTitleStatus(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTodoStatus", reflect.TypeOf((*MockStore)(nil).UpdateTodoStatus), arg0, arg1)
-}
-
-// UpdateTodoTitle mocks base method.
-func (m *MockStore) UpdateTodoTitle(arg0 context.Context, arg1 db.UpdateTodoTitleParams) (db.Todo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateTodoTitle", arg0, arg1)
-	ret0, _ := ret[0].(db.Todo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateTodoTitle indicates an expected call of UpdateTodoTitle.
-func (mr *MockStoreMockRecorder) UpdateTodoTitle(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTodoTitle", reflect.TypeOf((*MockStore)(nil).UpdateTodoTitle), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTodoTitleStatus", reflect.TypeOf((*MockStore)(nil).UpdateTodoTitleStatus), arg0, arg1)
 }
 
 // UploadAttachmentTx mocks base method.

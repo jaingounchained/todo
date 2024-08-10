@@ -22,6 +22,11 @@ func RandomStatus() string {
 	return statuses[rand.Intn(n)]
 }
 
+func RandomStatusPointer() *string {
+	s := RandomStatus()
+	return &s
+}
+
 func RandomString(n int) string {
 	var sb strings.Builder
 	k := len(alphabet)
@@ -32,4 +37,9 @@ func RandomString(n int) string {
 	}
 
 	return sb.String()
+}
+
+func RandomStringPointer(n int) *string {
+	s := RandomString(n)
+	return &s
 }

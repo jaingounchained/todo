@@ -19,8 +19,7 @@ type Querier interface {
 	ListAttachmentOfTodo(ctx context.Context, todoID int64) ([]Attachment, error)
 	ListTodos(ctx context.Context, arg ListTodosParams) ([]Todo, error)
 	UpdateTodoFileCount(ctx context.Context, arg UpdateTodoFileCountParams) (Todo, error)
-	UpdateTodoStatus(ctx context.Context, arg UpdateTodoStatusParams) (Todo, error)
-	UpdateTodoTitle(ctx context.Context, arg UpdateTodoTitleParams) (Todo, error)
+	UpdateTodoTitleStatus(ctx context.Context, arg UpdateTodoTitleStatusParams) (Todo, error)
 }
 
 var _ Querier = (*Queries)(nil)

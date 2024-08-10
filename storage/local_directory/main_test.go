@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	localStorageTest, err = New(testLocalDirectoryPath)
+	localStorageTest, err = New(nil, testLocalDirectoryPath)
 	if err != nil {
 		os.Exit(1)
 	}

@@ -117,78 +117,26 @@ type updateTodoRequestURIParams struct {
 	getTodoRequest
 }
 
-type updateTodoTitleRequestBody struct {
-	Title string `json:"title" binding:"required,max=255"`
+type updateTodoRequestBody struct {
+	Title  *string `json:"title" binding:"omitempty,max=255"`
+	Status *string `json:"status" binding:"omitempty,todoStatus"`
 }
 
-// updateTodoTitle godoc
+// updateTodoTitleStatus godoc
 //
-//	@Summary		Updated the todo title
-//	@Description	Updates the todo title
+//	@Summary		Updated the todo title/status
+//	@Description	Updates the todo title/status
 //	@Tags			todos
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		int	true	"Todo ID"          minimum(1)
-//	@Param			todo	body	updateTodoTitleRequestBody true "Todo title"
+//	@Param			todoId	path		int	true	"Todo ID"          minimum(1)
+//	@Param			todo	body	updateTodoRequestBody true "Todo title/status"
 //	@Success		200	{object}	db.Todo
 //	@Failure		400
 //	@Failure		404
 //	@Failure		500
-//	@Router			/todos/{id}/title [post]
-func (server *Server) updateTodoTitle(ctx *gin.Context) {
-	// Bind ID
-	var reqURIParams updateTodoRequestURIParams
-	if err := ctx.ShouldBindUri(&reqURIParams); err != nil {
-		NewHTTPError(ctx, http.StatusBadRequest, err)
-		return
-	}
-
-	// Bind Title
-	var reqBody updateTodoTitleRequestBody
-	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
-		NewHTTPError(ctx, http.StatusBadRequest, err)
-		return
-	}
-
-	todo, err := server.store.UpdateTodoTitle(ctx, db.UpdateTodoTitleParams{
-		ID:    reqURIParams.TodoID,
-		Title: reqBody.Title,
-	})
-	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			NewHTTPError(ctx, http.StatusNotFound, &ResourceNotFoundError{
-				resourceType: "todo",
-				id:           reqURIParams.TodoID,
-			})
-			return
-		}
-
-		NewHTTPError(ctx, http.StatusInternalServerError, err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, todo)
-}
-
-type updateTodoStatusRequestBody struct {
-	Status string `json:"status" binding:"required,todoStatus"`
-}
-
-// updateTodoStatus godoc
-//
-//	@Summary		Updated the todo status
-//	@Description	Updates the todo status
-//	@Tags			todos
-//	@Accept			json
-//	@Produce		json
-//	@Param			id	path		int	true	"Todo ID"          minimum(1)
-//	@Param			todo	body	updateTodoStatusRequestBody true "Todo status"
-//	@Success		200	{object}	db.Todo
-//	@Failure		400
-//	@Failure		404
-//	@Failure		500
-//	@Router			/todos/{id}/status [post]
-func (server *Server) updateTodoStatus(ctx *gin.Context) {
+//	@Router			/todos/{todoId} [patch]
+func (server *Server) updateTodoTitleStatus(ctx *gin.Context) {
 	// Bind ID
 	var reqURIParams updateTodoRequestURIParams
 	if err := ctx.ShouldBindUri(&reqURIParams); err != nil {
@@ -197,15 +145,21 @@ func (server *Server) updateTodoStatus(ctx *gin.Context) {
 	}
 
 	// Bind Title
-	var reqBody updateTodoStatusRequestBody
+	var reqBody updateTodoRequestBody
 	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
-		// TODO: Improve error handling; Bind the error with the custom validator
-		NewHTTPError(ctx, http.StatusBadRequest, todoStatusInvalidError)
+		NewHTTPError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	todo, err := server.store.UpdateTodoStatus(ctx, db.UpdateTodoStatusParams{
+	// Update at least one of title or status
+	if reqBody.Title == nil && reqBody.Status == nil {
+		NewHTTPError(ctx, http.StatusBadRequest, updateTodoTitleStatusInvalidBodyError)
+		return
+	}
+
+	todo, err := server.store.UpdateTodoTitleStatus(ctx, db.UpdateTodoTitleStatusParams{
 		ID:     reqURIParams.TodoID,
+		Title:  reqBody.Title,
 		Status: reqBody.Status,
 	})
 	if err != nil {
@@ -234,12 +188,12 @@ type deleteTodoRequest struct {
 //	@Description	Delete todo by TodoID
 //	@Tags			todos
 //	@Accept			json
-//	@Param			id	path		int	true	"Todo ID"          minimum(1)
+//	@Param			todoId	path		int	true	"Todo ID"          minimum(1)
 //	@Success		200
 //	@Failure		400
 //	@Failure		404
 //	@Failure		500
-//	@Router			/todos/{id} [delete]
+//	@Router			/todos/{todoId} [delete]
 func (server *Server) deleteTodo(ctx *gin.Context) {
 	var req deleteTodoRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
