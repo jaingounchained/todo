@@ -114,105 +114,6 @@ paths:
       summary: Creates a Todo
       tags:
       - todos
-  /todos/{id}/attachments:
-    get:
-      consumes:
-      - application/json
-      description: Get attachment metadata for the corresponding todo
-      parameters:
-      - description: Todo ID
-        in: path
-        minimum: 1
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.getTodoAttachmentMetadataResponse'
-        "400":
-          description: Bad Request
-        "403":
-          description: Forbidden
-        "404":
-          description: Not Found
-        "500":
-          description: Internal Server Error
-      summary: Get attachments metadata
-      tags:
-      - attachments
-    post:
-      consumes:
-      - multipart/form-data
-      description: Upload attachments for the corresponding todo
-      parameters:
-      - description: Todo ID
-        in: path
-        minimum: 1
-        name: id
-        required: true
-        type: integer
-      - collectionFormat: csv
-        description: attachments
-        in: formData
-        items:
-          type: file
-        name: attachments
-        required: true
-        type: array
-      responses:
-        "200":
-          description: OK
-        "400":
-          description: Bad Request
-        "403":
-          description: Forbidden
-        "404":
-          description: Not Found
-        "413":
-          description: Request Entity Too Large
-        "415":
-          description: Unsupported Media Type
-        "500":
-          description: Internal Server Error
-      summary: Upload attachments
-      tags:
-      - attachments
-  /todos/{id}/attachments/{attachmentId}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete attachment for the corresponding todo
-      parameters:
-      - description: Todo ID
-        in: path
-        minimum: 1
-        name: id
-        required: true
-        type: integer
-      - description: attachment ID
-        in: path
-        minimum: 1
-        name: attachmentId
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "413":
-          description: Request Entity Too Large
-        "500":
-          description: Internal Server Error
-      summary: Delete attachment
-      tags:
-      - attachments
   /todos/{todoId}:
     delete:
       consumes:
@@ -295,7 +196,105 @@ paths:
       summary: Updated the todo title/status
       tags:
       - todos
+  /todos/{todoId}/attachments:
+    get:
+      consumes:
+      - application/json
+      description: Get attachment metadata for the corresponding todo
+      parameters:
+      - description: Todo ID
+        in: path
+        minimum: 1
+        name: todoId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.getTodoAttachmentMetadataResponse'
+        "400":
+          description: Bad Request
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Get attachments metadata
+      tags:
+      - attachments
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload attachments for the corresponding todo
+      parameters:
+      - description: Todo ID
+        in: path
+        minimum: 1
+        name: todoId
+        required: true
+        type: integer
+      - collectionFormat: csv
+        description: attachments
+        in: formData
+        items:
+          type: file
+        name: attachments
+        required: true
+        type: array
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "413":
+          description: Request Entity Too Large
+        "415":
+          description: Unsupported Media Type
+        "500":
+          description: Internal Server Error
+      summary: Upload attachments
+      tags:
+      - attachments
   /todos/{todoId}/attachments/{attachmentId}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete attachment for the corresponding todo
+      parameters:
+      - description: Todo ID
+        in: path
+        minimum: 1
+        name: todoId
+        required: true
+        type: integer
+      - description: attachment ID
+        in: path
+        minimum: 1
+        name: attachmentId
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "413":
+          description: Request Entity Too Large
+        "500":
+          description: Internal Server Error
+      summary: Delete attachment
+      tags:
+      - attachments
     get:
       consumes:
       - application/json

@@ -70,11 +70,11 @@ func TestDeleteFile(t *testing.T) {
 	require.FileExists(t, expectedFilePath)
 
 	// Attempt to delete the file
-	err = localStorageTest.SaveFile(context.Background(), todoID, fileName, fileContents)
-	require.Error(t, err)
+	err = localStorageTest.DeleteFile(context.Background(), todoID, fileName)
+	require.NoError(t, err)
 
 	// Attempt to delete the file again
-	err = localStorageTest.SaveFile(context.Background(), todoID, fileName, fileContents)
+	err = localStorageTest.DeleteFile(context.Background(), todoID, fileName)
 	require.Error(t, err)
 }
 

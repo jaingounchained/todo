@@ -8,7 +8,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./pg-data/:/var/lib/postgresql/data
+      - /tmp/todo/pg-data/:/var/lib/postgresql/data
     networks:
       - todo-network
   api:
@@ -31,7 +31,7 @@ services:
       ]
     command: [ "/app/main" ]
     volumes:
-      - ./uploads/:/app/uploads
+      - /tmp/todo/uploads/:/app/uploads
     networks:
       - todo-network
 networks:

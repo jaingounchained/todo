@@ -70,23 +70,9 @@ Tests are automatically ran using github actions on pushed directly to main bran
 
 ### Running tests in local
 
-Pre-requisite: golang-migrate
-
 ```sh
-# Start postgres container
-make postgresstart
-# Create todos db
-make createdb
-# Create relevant databases in todos db
-make migrateup
-# Create local storage for test
-make createlocalteststorage
 # Run test
 make test
-# Delete postgrescontainer
-make postgresstop
-# Delete local test storage
-make clearlocalteststorage
 ```
 
 ## Technologies Used

@@ -21,7 +21,7 @@ type uploadTodoAttachmentsRequest struct {
 //	@Description	Upload attachments for the corresponding todo
 //	@Tags			attachments
 //	@Accept			multipart/form-data
-//	@Param			id			path		int		true	"Todo ID"	minimum(1)
+//	@Param			todoId		path		int		true	"Todo ID"	minimum(1)
 //	@Param			attachments	formData	[]file	true	"attachments"
 //	@Success		200
 //	@Failure		403
@@ -30,7 +30,7 @@ type uploadTodoAttachmentsRequest struct {
 //	@Failure		404
 //	@Failure		400
 //	@Failure		500
-//	@Router			/todos/{id}/attachments [post]
+//	@Router			/todos/{todoId}/attachments [post]
 func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 	// Validate Content-Type header
 	if strings.TrimSpace(ctx.ContentType()) != MultipartFormDataHeader {
@@ -82,6 +82,9 @@ func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 	}
 
 	// validate individual file type
+	// 1. Mime type
+	// 2. TODO: File name limit
+	// 3. File size
 	for _, file := range files {
 		if err := validateMimeType(file.Filename, file.Header); err != nil {
 			NewHTTPError(ctx, http.StatusUnsupportedMediaType, err)
@@ -192,13 +195,13 @@ type getTodoAttachmentMetadataResponse struct {
 //	@Tags			attachments
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		int	true	"Todo ID"	minimum(1)
-//	@Success		200	{object}	getTodoAttachmentMetadataResponse
+//	@Param			todoId	path		int	true	"Todo ID"	minimum(1)
+//	@Success		200		{object}	getTodoAttachmentMetadataResponse
 //	@Failure		403
 //	@Failure		404
 //	@Failure		400
 //	@Failure		500
-//	@Router			/todos/{id}/attachments [get]
+//	@Router			/todos/{todoId}/attachments [get]
 func (server *Server) getTodoAttachmentMetadata(ctx *gin.Context) {
 	var req getTodoAttachmentMetadataRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -249,14 +252,14 @@ type deleteTodoAttachmentRequest struct {
 //	@Description	Delete attachment for the corresponding todo
 //	@Tags			attachments
 //	@Accept			json
-//	@Param			id				path	int	true	"Todo ID"		minimum(1)
+//	@Param			todoId			path	int	true	"Todo ID"		minimum(1)
 //	@Param			attachmentId	path	int	true	"attachment ID"	minimum(1)
 //	@Success		200
 //	@Failure		413
 //	@Failure		404
 //	@Failure		400
 //	@Failure		500
-//	@Router			/todos/{id}/attachments/{attachmentId} [delete]
+//	@Router			/todos/{todoId}/attachments/{attachmentId} [delete]
 func (server *Server) deleteTodoAttachment(ctx *gin.Context) {
 	var req deleteTodoAttachmentRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
