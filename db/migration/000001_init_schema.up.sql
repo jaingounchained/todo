@@ -4,5 +4,3 @@ CREATE TABLE "todos" (
   "status" varchar(20) NOT NULL DEFAULT 'incomplete',
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
-
-CREATE INDEX ON "todos" ("status");
