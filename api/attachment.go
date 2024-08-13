@@ -154,6 +154,11 @@ func (server *Server) getTodoAttachment(ctx *gin.Context) {
 		return
 	}
 
+	todo := server.fetchTodoAndHandleErrors(ctx, req.TodoID)
+	if todo == nil {
+		return
+	}
+
 	attachment := server.fetchAttachmentAndHandleErrors(ctx, req.AttachmentID)
 	if attachment == nil {
 		return
@@ -264,6 +269,11 @@ func (server *Server) deleteTodoAttachment(ctx *gin.Context) {
 	var req deleteTodoAttachmentRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		NewHTTPError(ctx, http.StatusBadRequest, err)
+		return
+	}
+
+	todo := server.fetchTodoAndHandleErrors(ctx, req.TodoID)
+	if todo == nil {
 		return
 	}
 
