@@ -37,7 +37,10 @@ sqlc:
 	sqlc generate
 
 test:
-	go test -v -cover -count=1 -short ./...
+	go test -cover -count=1 ./...
+
+testverbose:
+	go test -v -cover -count=1 ./...
 
 server:
 	go run main.go
@@ -54,4 +57,4 @@ dockerbuild:
 openapispec:
 	swag init
 
-.PHONY: network postgresstart postgresstop createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc server mocksql mockstorage clearlocalteststorage dockerbuild openapispec createlocalteststorage
+.PHONY: network postgresstart postgresstop createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc server mocksql mockstorage clearlocalteststorage dockerbuild openapispec createlocalteststorage testverbose
