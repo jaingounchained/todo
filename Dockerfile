@@ -18,18 +18,15 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
+# Switch to the new user
+USER appuser
+
 COPY --from=builder /app/main .
 COPY --from=builder /app/migrate ./migrate
 COPY app.env .
 COPY start.sh .
 COPY wait-for.sh .
 COPY db/migration ./migration
-
-# Change ownership of the files to the appuser
-RUN chown -R appuser:appgroup /app
-
-# Switch to the new user
-USER appuser
 
 EXPOSE 8080
 CMD [ "/app/main" ]
