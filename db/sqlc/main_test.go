@@ -41,7 +41,7 @@ func CreateTestPostgresContainer() string {
 	ctx := context.Background()
 	container, err := postgres.Run(
 		ctx,
-		"postgres:14",
+		"postgres:14-alpine",
 		postgres.WithDatabase("todos"),
 		postgres.WithUsername("root"),
 		postgres.WithPassword("secret"),

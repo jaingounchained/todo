@@ -1,0 +1,14 @@
+.git/*
+.github/*
+uploads/*
+todo
+.DS_STORE
+test-files/*
+pg-data/*
+coverage.out
+tmp/*
+
+Dockerfile
+Makefile
+README.md
+docker-compose.yml
