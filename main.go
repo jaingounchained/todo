@@ -11,6 +11,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jaingounchained/todo/api"
@@ -64,6 +67,9 @@ func main() {
 		logger.Fatal("Failed to ping the db: ", zap.Error(err))
 	}
 
+	// run db migration
+	runDBMigration(logger, config.MigrationURL, config.DBSource)
+
 	store := db.NewStore(connPool)
 
 	// Setup file storage
@@ -98,6 +104,19 @@ func main() {
 	go startHTTPServer(logger, httpServer)
 
 	applicationShutdown(logger, done, httpServer, connPool, storage)
+}
+
+func runDBMigration(logger *zap.Logger, migrationURL, dbSource string) {
+	migration, err := migrate.New(migrationURL, dbSource)
+	if err != nil {
+		logger.Fatal("cannot create new migrate instance", zap.Error(err))
+	}
+
+	if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
+		logger.Fatal("failed to run migrate up with error", zap.Error(err))
+	}
+
+	logger.Info("db migrated successfully")
 }
 
 func applicationShutdown(logger *zap.Logger, done <-chan os.Signal, httpServer *http.Server, connPool *pgxpool.Pool, storage storage.Storage) {
