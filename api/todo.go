@@ -22,8 +22,10 @@ type getTodoRequest struct {
 //	@Param			todoId	path		int	true	"Todo ID"	minimum(1)
 //	@Success		200		{object}	db.Todo
 //	@Failure		400
+//	@Failure		401
 //	@Failure		404
 //	@Failure		500
+//	@Security		AccessTokenAuth
 //	@Router			/todos/{todoId} [get]
 func (server *Server) getTodo(ctx *gin.Context) {
 	var req getTodoRequest
@@ -53,8 +55,10 @@ type createTodoRequest struct {
 //	@Produce		json
 //	@Param			todo	body		createTodoRequest	true	"Todo title"
 //	@Success		200		{object}	db.Todo
+//	@Failure		401
 //	@Failure		400
 //	@Failure		500
+//	@Security		AccessTokenAuth
 //	@Router			/todos [post]
 func (server *Server) createTodo(ctx *gin.Context) {
 	var req createTodoRequest
@@ -93,9 +97,11 @@ type listTodoRequest struct {
 //	@Param			pageId		query	int	true	"page ID"	minimum(1)
 //	@Param			pageSize	query	int	true	"page size"	minimum(5)	maximum(10)
 //
-//	@Success		200			{array}	db.Todo
+//	@Success		200			{array}	[]db.Todo
 //	@Failure		400
+//	@Failure		401
 //	@Failure		500
+//	@Security		AccessTokenAuth
 //	@Router			/todos [get]
 func (server *Server) listTodo(ctx *gin.Context) {
 	var req listTodoRequest
@@ -141,7 +147,9 @@ type updateTodoRequestBody struct {
 //	@Success		200		{object}	db.Todo
 //	@Failure		400
 //	@Failure		404
+//	@Failure		401
 //	@Failure		500
+//	@Security		AccessTokenAuth
 //	@Router			/todos/{todoId} [patch]
 func (server *Server) updateTodoTitleStatus(ctx *gin.Context) {
 	// Bind ID
@@ -196,7 +204,9 @@ type deleteTodoRequest struct {
 //	@Success		200
 //	@Failure		400
 //	@Failure		404
+//	@Failure		401
 //	@Failure		500
+//	@Security		AccessTokenAuth
 //	@Router			/todos/{todoId} [delete]
 func (server *Server) deleteTodo(ctx *gin.Context) {
 	var req deleteTodoRequest

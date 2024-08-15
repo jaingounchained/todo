@@ -40,8 +40,9 @@ func newUserResponse(user db.User) userResponse {
 //	@Accept			json
 //	@Produce		json
 //	@Param			user	body		createUserRequest	true	"User details"
-//	@Success		200		{object}	createUserResponse
+//	@Success		200		{object}	userResponse
 //	@Failure		400
+//	@Failure		403
 //	@Failure		500
 //	@Router			/users [post]
 func (server *Server) createUser(ctx *gin.Context) {
@@ -90,7 +91,21 @@ type loginUserResponse struct {
 	User                  userResponse `json:"user"`
 }
 
-// TODO: Add swaggo comments; research how to add token authentication in other api docs
+// loginUser godoc
+//
+//	@Summary		User login
+//	@Description	Returns an access token for accessing user resources
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			loginCredentials	body		loginUserRequest	true	"User login credentials"
+//	@Success		200					{object}	loginUserResponse
+//	@Failure		400
+//	@Failure		401
+//	@Failure		403
+//	@Failure		404
+//	@Failure		500
+//	@Router			/users/login [post]
 func (server *Server) loginUser(ctx *gin.Context) {
 	var req loginUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

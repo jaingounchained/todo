@@ -18,7 +18,21 @@ type renewAccessTokenResponse struct {
 	AccessTokenExpiresAt time.Time `json:"accessTokenExpiredAt"`
 }
 
-// TODO: Add swaggo comments; research how to add token authentication in other api docs
+// renewAccessToken godoc
+//
+//	@Summary		Renew access token
+//	@Description	Renew the access token through the refresh token
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			refreshToken	body		renewAccessTokenRequest	true	"Refresh token"
+//	@Success		200				{object}	renewAccessTokenResponse
+//	@Failure		400
+//	@Failure		401
+//	@Failure		404
+//	@Failure		403
+//	@Failure		500
+//	@Router			/tokens/renewAccess [post]
 func (server *Server) renewAccessToken(ctx *gin.Context) {
 	var req renewAccessTokenRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

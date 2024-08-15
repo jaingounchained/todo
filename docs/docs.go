@@ -35,6 +35,11 @@ const docTemplate = `{
         },
         "/todos": {
             "get": {
+                "security": [
+                    {
+                        "AccessTokenAuth": []
+                    }
+                ],
                 "description": "List todos based on page ID and page size",
                 "produces": [
                     "application/json"
@@ -68,12 +73,18 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.Todo"
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/db.Todo"
+                                }
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
                     },
                     "500": {
                         "description": "Internal Server Error"
@@ -81,6 +92,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "AccessTokenAuth": []
+                    }
+                ],
                 "description": "Creates a todo with the specified title",
                 "consumes": [
                     "application/json"
@@ -113,6 +129,9 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
                     "500": {
                         "description": "Internal Server Error"
                     }
@@ -121,6 +140,11 @@ const docTemplate = `{
         },
         "/todos/{todoId}": {
             "get": {
+                "security": [
+                    {
+                        "AccessTokenAuth": []
+                    }
+                ],
                 "description": "Get todo by TodoID",
                 "produces": [
                     "application/json"
@@ -149,6 +173,9 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "description": "Not Found"
                     },
@@ -158,6 +185,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "AccessTokenAuth": []
+                    }
+                ],
                 "description": "Delete todo by TodoID",
                 "consumes": [
                     "application/json"
@@ -183,6 +215,9 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "description": "Not Found"
                     },
@@ -192,6 +227,11 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "AccessTokenAuth": []
+                    }
+                ],
                 "description": "Updates the todo title/status",
                 "consumes": [
                     "application/json"
@@ -232,6 +272,9 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "description": "Not Found"
                     },
@@ -243,6 +286,11 @@ const docTemplate = `{
         },
         "/todos/{todoId}/attachments": {
             "get": {
+                "security": [
+                    {
+                        "AccessTokenAuth": []
+                    }
+                ],
                 "description": "Get attachment metadata for the corresponding todo",
                 "consumes": [
                     "application/json"
@@ -274,6 +322,9 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "description": "Forbidden"
                     },
@@ -286,6 +337,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "AccessTokenAuth": []
+                    }
+                ],
                 "description": "Upload attachments for the corresponding todo",
                 "consumes": [
                     "multipart/form-data"
@@ -322,6 +378,9 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "description": "Forbidden"
                     },
@@ -342,6 +401,11 @@ const docTemplate = `{
         },
         "/todos/{todoId}/attachments/{attachmentId}": {
             "get": {
+                "security": [
+                    {
+                        "AccessTokenAuth": []
+                    }
+                ],
                 "description": "Get attachment for the corresponding todo",
                 "consumes": [
                     "application/json"
@@ -378,6 +442,9 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "description": "Forbidden"
                     },
@@ -390,6 +457,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "AccessTokenAuth": []
+                    }
+                ],
                 "description": "Delete attachment for the corresponding todo",
                 "consumes": [
                     "application/json"
@@ -423,11 +495,63 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "description": "Not Found"
                     },
                     "413": {
                         "description": "Request Entity Too Large"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/tokens/renewAccess": {
+            "post": {
+                "description": "Renew the access token through the refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Renew access token",
+                "parameters": [
+                    {
+                        "description": "Refresh token",
+                        "name": "refreshToken",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.renewAccessTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.renewAccessTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
                     },
                     "500": {
                         "description": "Internal Server Error"
@@ -463,11 +587,63 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.createUserResponse"
+                            "$ref": "#/definitions/api.userResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/users/login": {
+            "post": {
+                "description": "Returns an access token for accessing user resources",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "User login credentials",
+                        "name": "loginCredentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.loginUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.loginUserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
                     },
                     "500": {
                         "description": "Internal Server Error"
@@ -480,13 +656,9 @@ const docTemplate = `{
         "api.createTodoRequest": {
             "type": "object",
             "required": [
-                "owner",
                 "title"
             ],
             "properties": {
-                "owner": {
-                    "type": "string"
-                },
                 "title": {
                     "type": "string",
                     "maxLength": 255
@@ -521,23 +693,6 @@ const docTemplate = `{
                 }
             }
         },
-        "api.createUserResponse": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "jain@jaingounchained.com"
-                },
-                "fullName": {
-                    "type": "string",
-                    "example": "Jain Bhavya"
-                },
-                "username": {
-                    "type": "string",
-                    "example": "jaingounchained"
-                }
-            }
-        },
         "api.getTodoAttachmentMetadataResponse": {
             "type": "object",
             "properties": {
@@ -552,6 +707,69 @@ const docTemplate = `{
                 }
             }
         },
+        "api.loginUserRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "weak_password"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "jaingounchained"
+                }
+            }
+        },
+        "api.loginUserResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "accessTokenExpiredAt": {
+                    "type": "string"
+                },
+                "refreshToken": {
+                    "type": "string"
+                },
+                "refreshTokenExpiredAt": {
+                    "type": "string"
+                },
+                "sessionId": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/api.userResponse"
+                }
+            }
+        },
+        "api.renewAccessTokenRequest": {
+            "type": "object",
+            "required": [
+                "refreshToken"
+            ],
+            "properties": {
+                "refreshToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.renewAccessTokenResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "accessTokenExpiredAt": {
+                    "type": "string"
+                }
+            }
+        },
         "api.updateTodoRequestBody": {
             "type": "object",
             "properties": {
@@ -561,6 +779,23 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "maxLength": 255
+                }
+            }
+        },
+        "api.userResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "jain@jaingounchained.com"
+                },
+                "fullName": {
+                    "type": "string",
+                    "example": "Jain Bhavya"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "jaingounchained"
                 }
             }
         },
@@ -586,6 +821,14 @@ const docTemplate = `{
                     "type": "integer"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "AccessTokenAuth": {
+            "description": "To access todos and attachments",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

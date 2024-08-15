@@ -27,9 +27,11 @@ type uploadTodoAttachmentsRequest struct {
 //	@Failure		403
 //	@Failure		413
 //	@Failure		415
+//	@Failure		401
 //	@Failure		404
 //	@Failure		400
 //	@Failure		500
+//	@Security		AccessTokenAuth
 //	@Router			/todos/{todoId}/attachments [post]
 func (server *Server) uploadTodoAttachments(ctx *gin.Context) {
 	// Validate Content-Type header
@@ -143,9 +145,11 @@ type getTodoAttachmentRequest struct {
 //	@Param			attachmentId	path	int	true	"attachment ID"	minimum(1)
 //	@Success		200
 //	@Failure		403
+//	@Failure		401
 //	@Failure		404
 //	@Failure		400
 //	@Failure		500
+//	@Security		AccessTokenAuth
 //	@Router			/todos/{todoId}/attachments/{attachmentId} [get]
 func (server *Server) getTodoAttachment(ctx *gin.Context) {
 	var req getTodoAttachmentRequest
@@ -204,8 +208,10 @@ type getTodoAttachmentMetadataResponse struct {
 //	@Success		200		{object}	getTodoAttachmentMetadataResponse
 //	@Failure		403
 //	@Failure		404
+//	@Failure		401
 //	@Failure		400
 //	@Failure		500
+//	@Security		AccessTokenAuth
 //	@Router			/todos/{todoId}/attachments [get]
 func (server *Server) getTodoAttachmentMetadata(ctx *gin.Context) {
 	var req getTodoAttachmentMetadataRequest
@@ -262,8 +268,10 @@ type deleteTodoAttachmentRequest struct {
 //	@Success		200
 //	@Failure		413
 //	@Failure		404
+//	@Failure		401
 //	@Failure		400
 //	@Failure		500
+//	@Security		AccessTokenAuth
 //	@Router			/todos/{todoId}/attachments/{attachmentId} [delete]
 func (server *Server) deleteTodoAttachment(ctx *gin.Context) {
 	var req deleteTodoAttachmentRequest
