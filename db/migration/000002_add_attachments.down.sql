@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS attachments;
+DROP TABLE IF EXISTS "attachments";
 
-ALTER TABLE todos
-DROP COLUMN file_count;
+ALTER TABLE "todos" DROP COLUMN "file_count";

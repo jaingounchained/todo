@@ -1,5 +1,4 @@
-ALTER TABLE todos
-ADD COLUMN file_count INTEGER DEFAULT 0 NOT NULL;
+ALTER TABLE todos ADD COLUMN file_count INTEGER DEFAULT 0 NOT NULL;
 
 CREATE TABLE "attachments" (
     "id" bigserial PRIMARY KEY,
