@@ -142,20 +142,23 @@ func TestDeleteTodo(t *testing.T) {
 }
 
 func TestListTodos(t *testing.T) {
+	var lastTodo Todo
 	for i := 0; i < 10; i++ {
-		createRandomTodo(t)
+		lastTodo = createRandomTodo(t)
 	}
 
 	arg := ListTodosParams{
+		Owner:  lastTodo.Owner,
 		Limit:  5,
-		Offset: 5,
+		Offset: 0,
 	}
 
 	todos, err := testStore.ListTodos(context.Background(), arg)
 	require.NoError(t, err)
-	require.Len(t, todos, 5)
+	require.NotEmpty(t, todos)
 
 	for _, todo := range todos {
 		require.NotEmpty(t, todo)
+		require.Equal(t, lastTodo.Owner, todo.Owner)
 	}
 }

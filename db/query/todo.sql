@@ -12,9 +12,10 @@ WHERE id = $1 LIMIT 1;
 
 -- name: ListTodos :many
 SELECT * FROM todos
+WHERE owner = $1
 ORDER BY id
-LIMIT $1
-OFFSET $2;
+LIMIT $2
+OFFSET $3;
 
 -- name: UpdateTodoTitleStatus :one
 UPDATE todos

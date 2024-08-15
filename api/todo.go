@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	db "github.com/jaingounchained/todo/db/sqlc"
+	"github.com/jaingounchained/todo/token"
 )
 
 type getTodoRequest struct {
@@ -62,7 +63,10 @@ func (server *Server) createTodo(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
 	result, err := server.store.CreateTodoTx(ctx, db.CreateTodoTxParams{
+		TodoOwner: authPayload.Username,
 		TodoTitle: req.Title,
 		Storage:   server.storage,
 	})
@@ -101,7 +105,10 @@ func (server *Server) listTodo(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
 	todos, err := server.store.ListTodos(ctx, db.ListTodosParams{
+		Owner:  authPayload.Username,
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
 	})
@@ -144,7 +151,12 @@ func (server *Server) updateTodoTitleStatus(ctx *gin.Context) {
 		return
 	}
 
-	// Bind Title
+	todo := server.fetchTodoAndHandleErrors(ctx, reqURIParams.TodoID)
+	if todo == nil {
+		return
+	}
+
+	// Bind Title and Status
 	var reqBody updateTodoRequestBody
 	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
 		NewHTTPError(ctx, http.StatusBadRequest, err)
@@ -157,25 +169,17 @@ func (server *Server) updateTodoTitleStatus(ctx *gin.Context) {
 		return
 	}
 
-	todo, err := server.store.UpdateTodoTitleStatus(ctx, db.UpdateTodoTitleStatusParams{
+	updatedTodo, err := server.store.UpdateTodoTitleStatus(ctx, db.UpdateTodoTitleStatusParams{
 		ID:     reqURIParams.TodoID,
 		Title:  reqBody.Title,
 		Status: reqBody.Status,
 	})
 	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			NewHTTPError(ctx, http.StatusNotFound, &ResourceNotFoundError{
-				resourceType: "todo",
-				id:           reqURIParams.TodoID,
-			})
-			return
-		}
-
 		NewHTTPError(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, todo)
+	ctx.JSON(http.StatusOK, updatedTodo)
 }
 
 type deleteTodoRequest struct {
@@ -230,6 +234,13 @@ func (server *Server) fetchTodoAndHandleErrors(ctx *gin.Context, todoID int64) *
 		}
 
 		NewHTTPError(ctx, http.StatusInternalServerError, err)
+		return nil
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if todo.Owner != authPayload.Username {
+		err := errors.New("todo doesn't belog to the authenticated user")
+		NewHTTPError(ctx, http.StatusUnauthorized, err)
 		return nil
 	}
 

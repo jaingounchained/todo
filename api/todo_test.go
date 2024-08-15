@@ -9,19 +9,22 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	mockdb "github.com/jaingounchained/todo/db/mock"
 	db "github.com/jaingounchained/todo/db/sqlc"
 	mockStorage "github.com/jaingounchained/todo/storage/mock"
+	"github.com/jaingounchained/todo/token"
 	"github.com/jaingounchained/todo/util"
 	"github.com/stretchr/testify/assert"
 )
 
-func RandomTodo() db.Todo {
+func randomTodo(owner string) db.Todo {
 	return db.Todo{
 		ID:        util.RandomInt(1, 1000),
+		Owner:     owner,
 		Title:     util.RandomString(10),
 		Status:    util.RandomStatus(),
 		FileCount: 0,
@@ -61,11 +64,13 @@ func assertBodyMatchError(t *testing.T, body *bytes.Buffer, expectedError error)
 }
 
 func TestGetTodoAPI(t *testing.T) {
-	todo := RandomTodo()
+	user, _ := randomUser(t)
+	todo := randomTodo(user.Username)
 
 	tcs := []struct {
 		name               string
 		todoID             int64
+		setupAuth          func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		buildDBStub        func(store *mockdb.MockStore)
 		checkOKResponse    func(recorder *httptest.ResponseRecorder)
 		errorExpected      bool
@@ -75,6 +80,9 @@ func TestGetTodoAPI(t *testing.T) {
 		{
 			name:   "OK",
 			todoID: todo.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetTodo(gomock.Any(), gomock.Eq(todo.ID)).
@@ -87,8 +95,38 @@ func TestGetTodoAPI(t *testing.T) {
 			},
 		},
 		{
+			name:   "UnauthorizedUser",
+			todoID: todo.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, util.RandomString(10), time.Minute)
+			},
+			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetTodo(gomock.Any(), gomock.Eq(todo.ID)).
+					Times(1).
+					Return(todo, nil)
+			},
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
+			name:      "NoAuthorization",
+			todoID:    todo.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {},
+			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Any()).Times(0)
+			},
+			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
 			name:   "NotFound",
 			todoID: todo.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetTodo(gomock.Any(), gomock.Eq(todo.ID)).
@@ -108,6 +146,9 @@ func TestGetTodoAPI(t *testing.T) {
 		{
 			name:   "InternalError",
 			todoID: todo.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetTodo(gomock.Any(), gomock.Eq(todo.ID)).
@@ -124,6 +165,9 @@ func TestGetTodoAPI(t *testing.T) {
 		{
 			name:   "InvalidID",
 			todoID: 0,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					GetTodo(gomock.Any(), gomock.Any()).
@@ -154,6 +198,7 @@ func TestGetTodoAPI(t *testing.T) {
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			assert.NoError(t, err)
 
+			tc.setupAuth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
@@ -166,11 +211,13 @@ func TestGetTodoAPI(t *testing.T) {
 }
 
 func TestCreateTodoAPI(t *testing.T) {
-	todo := RandomTodo()
+	user, _ := randomUser(t)
+	todo := randomTodo(user.Username)
 
 	tcs := []struct {
 		name               string
 		body               gin.H
+		setupAuth          func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		buildDBStub        func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage)
 		checkOKResponse    func(recorder *httptest.ResponseRecorder)
 		errorExpected      bool
@@ -182,8 +229,12 @@ func TestCreateTodoAPI(t *testing.T) {
 			body: gin.H{
 				"title": todo.Title,
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
 				arg := db.CreateTodoTxParams{
+					TodoOwner: user.Username,
 					TodoTitle: todo.Title,
 					Storage:   mockStorage,
 				}
@@ -202,6 +253,9 @@ func TestCreateTodoAPI(t *testing.T) {
 			body: gin.H{
 				"title": util.RandomString(256),
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
 				store.EXPECT().
 					CreateTodoTx(gomock.Any(), gomock.Any()).
@@ -215,6 +269,9 @@ func TestCreateTodoAPI(t *testing.T) {
 		{
 			name: "InvalidRequestTitleAbsent",
 			body: nil,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
 				store.EXPECT().
 					CreateTodoTx(gomock.Any(), gomock.Any()).
@@ -229,6 +286,9 @@ func TestCreateTodoAPI(t *testing.T) {
 			name: "InternalServerError",
 			body: gin.H{
 				"title": todo.Title,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
 				store.EXPECT().
@@ -267,6 +327,7 @@ func TestCreateTodoAPI(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			assert.NoError(t, err)
 
+			tc.setupAuth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
@@ -279,10 +340,12 @@ func TestCreateTodoAPI(t *testing.T) {
 }
 
 func TestListTodoAPI(t *testing.T) {
+	user, _ := randomUser(t)
+
 	n := 5
 	todos := make([]db.Todo, 0)
 	for i := 0; i < n; i++ {
-		todos = append(todos, RandomTodo())
+		todos = append(todos, randomTodo(user.Username))
 	}
 
 	type Query struct {
@@ -294,6 +357,7 @@ func TestListTodoAPI(t *testing.T) {
 		name               string
 		todoID             int64
 		query              Query
+		setupAuth          func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		buildDBStub        func(store *mockdb.MockStore)
 		checkOKResponse    func(recorder *httptest.ResponseRecorder)
 		errorExpected      bool
@@ -306,8 +370,12 @@ func TestListTodoAPI(t *testing.T) {
 				pageID:   1,
 				pageSize: n,
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				arg := db.ListTodosParams{
+					Owner:  user.Username,
 					Limit:  int32(n),
 					Offset: 0,
 				}
@@ -328,6 +396,9 @@ func TestListTodoAPI(t *testing.T) {
 				pageID:   1,
 				pageSize: n,
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					ListTodos(gomock.Any(), gomock.Any()).
@@ -347,6 +418,9 @@ func TestListTodoAPI(t *testing.T) {
 				pageID:   -1,
 				pageSize: n,
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().
 					ListTodos(gomock.Any(), gomock.Any()).
@@ -362,6 +436,9 @@ func TestListTodoAPI(t *testing.T) {
 			query: Query{
 				pageID:   1,
 				pageSize: 100,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().
@@ -397,6 +474,7 @@ func TestListTodoAPI(t *testing.T) {
 			q.Add("pageSize", fmt.Sprintf("%d", tc.query.pageSize))
 			request.URL.RawQuery = q.Encode()
 
+			tc.setupAuth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
@@ -409,7 +487,9 @@ func TestListTodoAPI(t *testing.T) {
 }
 
 func TestUpdateTodoAPI(t *testing.T) {
-	todo := RandomTodo()
+	user, _ := randomUser(t)
+	todo := randomTodo(user.Username)
+
 	updatedTitle := util.RandomString(10)
 	updatedStatus := util.RandomStatus()
 
@@ -417,6 +497,7 @@ func TestUpdateTodoAPI(t *testing.T) {
 		name               string
 		todoID             int64
 		body               gin.H
+		setupAuth          func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		buildDBStub        func(store *mockdb.MockStore)
 		checkOKResponse    func(recorder *httptest.ResponseRecorder)
 		errorExpected      bool
@@ -426,7 +507,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 		{
 			name:   "InvalidID",
 			todoID: 0,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Any()).Times(0)
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
@@ -442,7 +527,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 			body: gin.H{
 				"title": util.RandomString(256),
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
@@ -456,7 +545,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 			body: gin.H{
 				"status": util.RandomString(10),
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
@@ -470,7 +563,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 			body: gin.H{
 				"status": util.RandomInt(1, 1000),
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
@@ -482,7 +579,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 			name:   "TitleAndStatusNotPresent",
 			todoID: todo.ID,
 			body:   gin.H{},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
@@ -493,14 +594,18 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "TodoNotFound",
+			name:   "TodoNotFound",
+			todoID: todo.ID,
 			body: gin.H{
 				"title":  updatedTitle,
 				"status": updatedStatus,
 			},
-			todoID: todo.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
-				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(1).Return(db.Todo{}, db.ErrRecordNotFound)
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, db.ErrRecordNotFound)
+				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
 			expectedError: &ResourceNotFoundError{
@@ -513,13 +618,17 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "InternalError",
+			name:   "InternalError",
+			todoID: todo.ID,
 			body: gin.H{
 				"title":  updatedTitle,
 				"status": updatedStatus,
 			},
-			todoID: todo.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(1).Return(db.Todo{}, sql.ErrConnDone)
 			},
 			errorExpected: true,
@@ -535,7 +644,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 			body: gin.H{
 				"title": updatedTitle,
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				arg := db.UpdateTodoTitleStatusParams{
 					ID:    todo.ID,
 					Title: &updatedTitle,
@@ -553,7 +666,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 			body: gin.H{
 				"status": updatedStatus,
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				arg := db.UpdateTodoTitleStatusParams{
 					ID:     todo.ID,
 					Status: &updatedStatus,
@@ -572,7 +689,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 				"title":  updatedTitle,
 				"status": updatedStatus,
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore) {
+				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				arg := db.UpdateTodoTitleStatusParams{
 					ID:     todo.ID,
 					Title:  &updatedTitle,
@@ -607,6 +728,7 @@ func TestUpdateTodoAPI(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
 			assert.NoError(t, err)
 
+			tc.setupAuth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
@@ -619,11 +741,13 @@ func TestUpdateTodoAPI(t *testing.T) {
 }
 
 func TestDeleteTodoAPI(t *testing.T) {
-	todo := RandomTodo()
+	user, _ := randomUser(t)
+	todo := randomTodo(user.Username)
 
 	tcs := []struct {
 		name               string
 		todoID             int64
+		setupAuth          func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		buildDBStub        func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage)
 		checkOKResponse    func(recorder *httptest.ResponseRecorder)
 		errorExpected      bool
@@ -633,6 +757,9 @@ func TestDeleteTodoAPI(t *testing.T) {
 		{
 			name:   "InvalidID",
 			todoID: 0,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Any()).Times(0)
 				store.EXPECT().DeleteTodoTx(gomock.Any(), gomock.Any()).Times(0)
@@ -647,6 +774,9 @@ func TestDeleteTodoAPI(t *testing.T) {
 		{
 			name:   "NotFound",
 			todoID: todo.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, db.ErrRecordNotFound)
 				store.EXPECT().DeleteTodoTx(gomock.Any(), gomock.Any()).Times(0)
@@ -664,6 +794,9 @@ func TestDeleteTodoAPI(t *testing.T) {
 		{
 			name:   "InternalError",
 			todoID: todo.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				arg := db.DeleteTodoTxParams{
@@ -682,6 +815,9 @@ func TestDeleteTodoAPI(t *testing.T) {
 		{
 			name:   "OK",
 			todoID: todo.ID,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
+			},
 			buildDBStub: func(store *mockdb.MockStore, mockStorage *mockStorage.MockStorage) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
 				arg := db.DeleteTodoTxParams{
@@ -714,6 +850,7 @@ func TestDeleteTodoAPI(t *testing.T) {
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			assert.NoError(t, err)
 
+			tc.setupAuth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {

@@ -54,20 +54,22 @@ func (server *Server) setupRouter(l *zap.Logger) {
 	if l == nil {
 		router.Use(gin.Logger())
 	} else {
-		router.Use(logger(l))
+		router.Use(loggerMiddleware(l))
 	}
+
+	server.setupSwagger(router)
 
 	// health check router
 	router.GET("/health", server.health)
 
 	server.setupUserRouters(router)
 
-	server.setupGetResourceRouters(router)
-	server.setupCreateResourceRouters(router)
-	server.setupUpdateResourceRouters(router)
-	server.setupDeleteResourceRouters(router)
+	authRouterGroup := router.Group("/").Use(authMiddleware(server.tokenMaker))
 
-	server.setupSwagger(router)
+	server.setupGetResourceRouters(authRouterGroup)
+	server.setupCreateResourceRouters(authRouterGroup)
+	server.setupUpdateResourceRouters(authRouterGroup)
+	server.setupDeleteResourceRouters(authRouterGroup)
 
 	server.router = router
 }
@@ -81,37 +83,29 @@ func (server *Server) setupUserRouters(router *gin.Engine) {
 	router.POST("/users/login", server.loginUser)
 }
 
-func (server *Server) setupGetResourceRouters(router *gin.Engine) {
-	// Get todo
-	router.GET("/todos", server.listTodo)
-	router.GET("/todos/:todoId", server.getTodo)
+func (server *Server) setupGetResourceRouters(authRouterGroup gin.IRoutes) {
+	authRouterGroup.GET("/todos", server.listTodo)
+	authRouterGroup.GET("/todos/:todoId", server.getTodo)
 
-	// TODO: Get todo attachment metadata
-	router.GET("/todos/:todoId/attachments", server.getTodoAttachmentMetadata)
+	authRouterGroup.GET("/todos/:todoId/attachments", server.getTodoAttachmentMetadata)
 
-	// TODO: Get todo attachment
-	router.GET("/todos/:todoId/attachments/:attachmentId", server.getTodoAttachment)
+	authRouterGroup.GET("/todos/:todoId/attachments/:attachmentId", server.getTodoAttachment)
 }
 
-func (server *Server) setupCreateResourceRouters(router *gin.Engine) {
-	// Create todo
-	router.POST("/todos", server.createTodo)
+func (server *Server) setupCreateResourceRouters(authRouterGroup gin.IRoutes) {
+	authRouterGroup.POST("/todos", server.createTodo)
 
-	// TODO: Create attachments
-	router.POST("/todos/:todoId/attachments", server.uploadTodoAttachments)
+	authRouterGroup.POST("/todos/:todoId/attachments", server.uploadTodoAttachments)
 }
 
-func (server *Server) setupUpdateResourceRouters(router *gin.Engine) {
-	// Update todo title or status
-	router.PATCH("/todos/:todoId", server.updateTodoTitleStatus)
+func (server *Server) setupUpdateResourceRouters(authRouterGroup gin.IRoutes) {
+	authRouterGroup.PATCH("/todos/:todoId", server.updateTodoTitleStatus)
 }
 
-func (server *Server) setupDeleteResourceRouters(router *gin.Engine) {
-	// TODO: Delete todo attachment
-	router.DELETE("/todos/:todoId/attachments/:attachmentId", server.deleteTodoAttachment)
+func (server *Server) setupDeleteResourceRouters(authRouterGroup gin.IRoutes) {
+	authRouterGroup.DELETE("/todos/:todoId/attachments/:attachmentId", server.deleteTodoAttachment)
 
-	// Delete todo
-	router.DELETE("/todos/:todoId", server.deleteTodo)
+	authRouterGroup.DELETE("/todos/:todoId", server.deleteTodo)
 }
 
 // Start runs the HTTP server on a specific address
