@@ -14,7 +14,7 @@ INSERT INTO todos (
     title
 ) VALUES (
     $1
-) RETURNING id, title, status, created_at, file_count
+) RETURNING id, title, status, created_at, file_count, owner
 `
 
 func (q *Queries) CreateTodo(ctx context.Context, title string) (Todo, error) {
@@ -26,6 +26,7 @@ func (q *Queries) CreateTodo(ctx context.Context, title string) (Todo, error) {
 		&i.Status,
 		&i.CreatedAt,
 		&i.FileCount,
+		&i.Owner,
 	)
 	return i, err
 }
@@ -41,7 +42,7 @@ func (q *Queries) DeleteTodo(ctx context.Context, id int64) error {
 }
 
 const getTodo = `-- name: GetTodo :one
-SELECT id, title, status, created_at, file_count FROM todos
+SELECT id, title, status, created_at, file_count, owner FROM todos
 WHERE id = $1 LIMIT 1
 `
 
@@ -54,12 +55,13 @@ func (q *Queries) GetTodo(ctx context.Context, id int64) (Todo, error) {
 		&i.Status,
 		&i.CreatedAt,
 		&i.FileCount,
+		&i.Owner,
 	)
 	return i, err
 }
 
 const listTodos = `-- name: ListTodos :many
-SELECT id, title, status, created_at, file_count FROM todos
+SELECT id, title, status, created_at, file_count, owner FROM todos
 ORDER BY id
 LIMIT $1
 OFFSET $2
@@ -85,6 +87,7 @@ func (q *Queries) ListTodos(ctx context.Context, arg ListTodosParams) ([]Todo, e
 			&i.Status,
 			&i.CreatedAt,
 			&i.FileCount,
+			&i.Owner,
 		); err != nil {
 			return nil, err
 		}
@@ -100,7 +103,7 @@ const updateTodoFileCount = `-- name: UpdateTodoFileCount :one
 UPDATE todos
 SET file_count = file_count + $2
 WHERE id = $1
-RETURNING id, title, status, created_at, file_count
+RETURNING id, title, status, created_at, file_count, owner
 `
 
 type UpdateTodoFileCountParams struct {
@@ -117,6 +120,7 @@ func (q *Queries) UpdateTodoFileCount(ctx context.Context, arg UpdateTodoFileCou
 		&i.Status,
 		&i.CreatedAt,
 		&i.FileCount,
+		&i.Owner,
 	)
 	return i, err
 }
@@ -126,7 +130,7 @@ UPDATE todos
 SET title = COALESCE($2, title),
     status = COALESCE($3, status)
 WHERE id = $1
-RETURNING id, title, status, created_at, file_count
+RETURNING id, title, status, created_at, file_count, owner
 `
 
 type UpdateTodoTitleStatusParams struct {
@@ -144,6 +148,7 @@ func (q *Queries) UpdateTodoTitleStatus(ctx context.Context, arg UpdateTodoTitle
 		&i.Status,
 		&i.CreatedAt,
 		&i.FileCount,
+		&i.Owner,
 	)
 	return i, err
 }

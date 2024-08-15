@@ -22,4 +22,14 @@ type Todo struct {
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"createdAt"`
 	FileCount int32     `json:"fileCount"`
+	Owner     string    `json:"owner"`
+}
+
+type User struct {
+	Username          string    `json:"username"`
+	HashedPassword    string    `json:"hashedPassword"`
+	FullName          string    `json:"fullName"`
+	Email             string    `json:"email"`
+	PasswordChangedAt time.Time `json:"passwordChangedAt"`
+	CreatedAt         time.Time `json:"createdAt"`
 }
