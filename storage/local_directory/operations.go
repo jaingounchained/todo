@@ -9,7 +9,7 @@ import (
 
 	storage "github.com/jaingounchained/todo/storage"
 	"github.com/jaingounchained/todo/util"
-	"go.uber.org/zap"
+	"github.com/rs/zerolog/log"
 )
 
 func (storage *LocalStorage) CreateTodoDirectory(ctx context.Context, todoID int64) error {
@@ -90,14 +90,27 @@ func (storage *LocalStorage) SaveMultipleFilesSafely(ctx context.Context, todoID
 		tempFile, err := os.CreateTemp("", "example")
 		if err != nil {
 			storage.cleanup(tempFiles)
-			storage.logger.Error("Failed to create temp files", zap.String("filename", name), zap.Error(err))
+
+			log.Error().
+				Int64("todoID", todoID).
+				Str("filename", name).
+				Err(err).
+				Msg("failed to create temp files")
+
 			return err
 		}
 		defer tempFile.Close()
 
 		if _, err := tempFile.Write(data); err != nil {
 			storage.cleanup(tempFiles)
-			storage.logger.Error("Failed to create temp files", zap.String("filename", name), zap.Error(err))
+
+			log.Error().
+				Int64("todoID", todoID).
+				Str("filename", name).
+				Err(err).
+				Msg("failed to create temp files")
+
+			return err
 		}
 
 		tempFiles[i] = tempFile
@@ -109,10 +122,20 @@ func (storage *LocalStorage) SaveMultipleFilesSafely(ctx context.Context, todoID
 	for i, tempFile := range tempFiles {
 		finalName := fileNames[i]
 		if err := storage.moveFile(tempFile.Name(), finalName); err != nil {
-			storage.logger.Error("Failed to write to temp file for the filename", zap.String("filename", finalName), zap.Error(err))
-			storage.revertRenames(tempFiles, fileNames)
+
+			log.Error().
+				Int64("todoID", todoID).
+				Str("filename", finalName).
+				Err(err).
+				Msg("failed to write to temp file")
+
+			storage.revertRenames(todoID, tempFiles, fileNames)
 			storage.cleanup(tempFiles)
-			storage.logger.Error("Failed to complete all renames; changes reverted.")
+
+			log.Error().
+				Int64("todoID", todoID).
+				Msg("failed to complete all names; changes reverted")
+
 			return err
 		}
 	}
@@ -128,17 +151,24 @@ func (storage *LocalStorage) cleanup(files []*os.File) {
 	}
 }
 
-func (storage *LocalStorage) revertRenames(tempFiles []*os.File, fileNames []string) {
+func (storage *LocalStorage) revertRenames(todoID int64, tempFiles []*os.File, fileNames []string) {
 	for i, file := range tempFiles {
 		finalName := fileNames[i]
 		if _, err := os.Stat(finalName); err == nil {
 			if err := os.Rename(finalName, file.Name()); err != nil {
-				storage.logger.Error("Failed to rever rename for the file", zap.String("filename", finalName), zap.Error(err))
+
+				log.Error().
+					Int64("todoID", todoID).
+					Str("filename", finalName).
+					Err(err).
+					Msg("failed to revert rename for the file")
+
 			}
 		}
 	}
 }
 
+// TODO: Add proper logs
 func (storage *LocalStorage) moveFile(src, dst string) error {
 	inputFile, err := os.Open(src)
 	if err != nil {

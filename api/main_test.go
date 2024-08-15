@@ -18,7 +18,7 @@ func newTestServer(t *testing.T, store db.Store, storage storage.Storage) *Serve
 		AccessTokenDuration: time.Minute,
 	}
 
-	server, err := NewGinHandler(config, store, storage, nil)
+	server, err := NewGinHandler(config, store, storage)
 	require.NoError(t, err)
 
 	return server

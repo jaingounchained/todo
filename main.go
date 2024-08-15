@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,7 +21,7 @@ import (
 	storage "github.com/jaingounchained/todo/storage"
 	localStorage "github.com/jaingounchained/todo/storage/local_directory"
 	"github.com/jaingounchained/todo/util"
-	"go.uber.org/zap"
+	"github.com/rs/zerolog/log"
 )
 
 //	@title			Todo API
@@ -43,39 +42,33 @@ func main() {
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 
 	// Logging setup
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer logger.Sync()
-
-	logger.Info("Logger setup")
+	log.Info().Msg("logger setup")
 
 	// Load config
 	config, err := util.LoadConfig(".")
 	if err != nil {
-		logger.Fatal("Failed to load config: ", zap.Error(err))
+		log.Fatal().Err(err).Msg("failed to load config")
 	}
 
 	// Setup DB connection
 	connPool, err := pgxpool.New(context.Background(), config.DBSource)
 	if err != nil {
-		logger.Fatal("Failed to connect to the db: ", zap.Error(err))
+		log.Fatal().Err(err).Msg("failed to connect to the postgreSQL db")
 	}
 
 	if err := connPool.Ping(context.Background()); err != nil {
-		logger.Fatal("Failed to ping the db: ", zap.Error(err))
+		log.Fatal().Err(err).Msg("failed to ping the db")
 	}
 
 	// run db migration
-	runDBMigration(logger, config.MigrationURL, config.DBSource)
+	runDBMigration(config.MigrationURL, config.DBSource)
 
 	store := db.NewStore(connPool)
 
 	// Setup file storage
 	cwd, err := os.Getwd()
 	if err != nil {
-		logger.Fatal("Failed to calculate current working directory: ", zap.Error(err))
+		log.Fatal().Err(err).Msg("failed to calculate current working directory")
 	}
 
 	var storage storage.Storage
@@ -83,45 +76,45 @@ func main() {
 	case "LOCAL":
 		localStoragePath := filepath.Join(cwd, config.LocalStorageDirectory)
 
-		storage, err = localStorage.New(logger, localStoragePath)
+		storage, err = localStorage.New(localStoragePath)
 		if err != nil {
-			logger.Fatal("cannot setup file storage for the local storageType: ", zap.Error(err))
+			log.Fatal().Err(err).Msg("cannot setup file storage for the local storageType")
 		}
 	case "S3":
-		logger.Fatal("S3 file storage unimplemented")
+		log.Fatal().Msg("s3 file storage unimplemented")
 	default:
-		logger.Fatal("Invalid file storage type chosen")
+		log.Fatal().Msg("invalid file storage type chosen")
 	}
 
 	// Initializing the http server
-	server, err := api.NewGinHandler(config, store, storage, logger)
+	server, err := api.NewGinHandler(config, store, storage)
 	if err != nil {
-		logger.Fatal("Unable to create server", zap.Error(err))
+		log.Fatal().Err(err).Msg("unable to create server")
 	}
 
 	httpServer := server.HttpServer(config.ServerAddress)
 
-	go startHTTPServer(logger, httpServer)
+	go startHTTPServer(httpServer)
 
-	applicationShutdown(logger, done, httpServer, connPool, storage)
+	applicationShutdown(done, httpServer, connPool, storage)
 }
 
-func runDBMigration(logger *zap.Logger, migrationURL, dbSource string) {
+func runDBMigration(migrationURL, dbSource string) {
 	migration, err := migrate.New(migrationURL, dbSource)
 	if err != nil {
-		logger.Fatal("cannot create new migrate instance", zap.Error(err))
+		log.Fatal().Err(err).Msg("cannot create new migrate instance")
 	}
 
 	if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
-		logger.Fatal("failed to run migrate up with error", zap.Error(err))
+		log.Fatal().Err(err).Msg("failed to run migrate up")
 	}
 
-	logger.Info("db migrated successfully")
+	log.Info().Msg("db migrated successfully")
 }
 
-func applicationShutdown(logger *zap.Logger, done <-chan os.Signal, httpServer *http.Server, connPool *pgxpool.Pool, storage storage.Storage) {
+func applicationShutdown(done <-chan os.Signal, httpServer *http.Server, connPool *pgxpool.Pool, storage storage.Storage) {
 	<-done
-	logger.Info("Shutting down server...")
+	log.Info().Msg("shutting down server...")
 
 	// Server has 5 seconds to finish
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -134,15 +127,15 @@ func applicationShutdown(logger *zap.Logger, done <-chan os.Signal, httpServer *
 	go storage.CloseConnection(context.Background())
 
 	if err := httpServer.Shutdown(ctx); err != nil {
-		logger.Error("Server forced to shutdown: ", zap.Error(err))
+		log.Error().Err(err).Msg("server forced to shutdown")
 	}
 
-	logger.Info("Server exiting...")
+	log.Info().Msg("server exiting...")
 }
 
-func startHTTPServer(logger *zap.Logger, httpServer *http.Server) {
-	logger.Info("Starting HTTP server...")
+func startHTTPServer(httpServer *http.Server) {
+	log.Info().Msg("starting HTTP server...")
 	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		logger.Error("", zap.Error(err))
+		log.Error().Err(err).Msg("failed to start HTTP server")
 	}
 }

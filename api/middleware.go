@@ -9,25 +9,25 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jaingounchained/todo/token"
-	"go.uber.org/zap"
+	"github.com/rs/zerolog/log"
 )
 
-func loggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
+func loggerMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		start := time.Now()
 		ctx.Next()
 
-		logger.Info("Incoming request",
-			zap.Int("status", ctx.Writer.Status()),
-			zap.Int64("content_length", ctx.Request.ContentLength),
-			zap.String("method", ctx.Request.Method),
-			zap.String("query", ctx.Request.URL.RawQuery),
-			zap.String("path", ctx.Request.URL.Path),
-			zap.String("ip", ctx.ClientIP()),
-			zap.String("user-agent", ctx.Request.UserAgent()),
-			zap.String("errors", ctx.Errors.ByType(gin.ErrorTypePrivate).String()),
-			zap.Duration("elapsed", time.Since(start)),
-		)
+		log.Info().
+			Int("status", ctx.Writer.Status()).
+			Int64("contentLength", ctx.Request.ContentLength).
+			Str("method", ctx.Request.Method).
+			Str("query", ctx.Request.URL.RawQuery).
+			Str("path", ctx.Request.URL.Path).
+			Str("ip", ctx.ClientIP()).
+			Str("userAgent", ctx.Request.UserAgent()).
+			Str("errors", ctx.Errors.ByType(gin.ErrorTypePrivate).String()).
+			Dur("elapsed", time.Since(start)).
+			Msg("Incoming request served")
 	}
 }
 

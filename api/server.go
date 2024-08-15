@@ -13,7 +13,6 @@ import (
 	"github.com/jaingounchained/todo/util"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"go.uber.org/zap"
 )
 
 // Server serves HTTP requests for todo service
@@ -26,7 +25,7 @@ type Server struct {
 }
 
 // NewGinHandler creates a new HTTP server and setup routing
-func NewGinHandler(config util.Config, store db.Store, storage storage.Storage, l *zap.Logger) (*Server, error) {
+func NewGinHandler(config util.Config, store db.Store, storage storage.Storage) (*Server, error) {
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
@@ -43,19 +42,15 @@ func NewGinHandler(config util.Config, store db.Store, storage storage.Storage, 
 		v.RegisterValidation("todoStatus", validTodoStatus)
 	}
 
-	server.setupRouter(l)
+	server.setupRouter()
 	return server, nil
 }
 
-func (server *Server) setupRouter(l *zap.Logger) {
+func (server *Server) setupRouter() {
 	router := gin.New()
 	gin.Default()
 
-	if l == nil {
-		router.Use(gin.Logger())
-	} else {
-		router.Use(loggerMiddleware(l))
-	}
+	router.Use(loggerMiddleware())
 
 	server.setupSwagger(router)
 
