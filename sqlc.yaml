@@ -16,6 +16,8 @@ sql:
         overrides:
           - db_type: "timestamptz"
             go_type: "time.Time"
+          - db_type: "uuid"
+            go_type: "github.com/google/uuid.UUID"
           - column: todos.id
             go_struct_tag: json:"todoId"
           - column: attachments.id

@@ -81,6 +81,7 @@ func (server *Server) setupSwagger(router *gin.Engine) {
 func (server *Server) setupUserRouters(router *gin.Engine) {
 	router.POST("/users", server.createUser)
 	router.POST("/users/login", server.loginUser)
+	router.POST("/tokens/renewAccess", server.renewAccessToken)
 }
 
 func (server *Server) setupGetResourceRouters(authRouterGroup gin.IRoutes) {

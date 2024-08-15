@@ -6,16 +6,20 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
 	CreateAttachment(ctx context.Context, arg CreateAttachmentParams) (Attachment, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateTodo(ctx context.Context, arg CreateTodoParams) (Todo, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteAttachment(ctx context.Context, id int64) error
 	DeleteAttachmentsOfTodo(ctx context.Context, todoID int64) error
 	DeleteTodo(ctx context.Context, id int64) error
 	GetAttachment(ctx context.Context, id int64) (Attachment, error)
+	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetTodo(ctx context.Context, id int64) (Todo, error)
 	GetUser(ctx context.Context, username string) (User, error)
 	ListAttachmentOfTodo(ctx context.Context, todoID int64) ([]Attachment, error)
