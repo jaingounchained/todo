@@ -428,18 +428,107 @@
                     }
                 }
             }
+        },
+        "/users": {
+            "post": {
+                "description": "Creates a User",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Creates a User",
+                "parameters": [
+                    {
+                        "description": "User details",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.createUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.createUserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
         }
     },
     "definitions": {
         "api.createTodoRequest": {
             "type": "object",
             "required": [
+                "owner",
                 "title"
             ],
             "properties": {
+                "owner": {
+                    "type": "string"
+                },
                 "title": {
                     "type": "string",
                     "maxLength": 255
+                }
+            }
+        },
+        "api.createUserRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "fullName",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "jain@jaingounchained.com"
+                },
+                "fullName": {
+                    "type": "string",
+                    "example": "Jain Bhavya"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "weak_password"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "jaingounchained"
+                }
+            }
+        },
+        "api.createUserResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "jain@jaingounchained.com"
+                },
+                "fullName": {
+                    "type": "string",
+                    "example": "Jain Bhavya"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "jaingounchained"
                 }
             }
         },
@@ -477,6 +566,9 @@
                 },
                 "fileCount": {
                     "type": "integer"
+                },
+                "owner": {
+                    "type": "string"
                 },
                 "status": {
                     "type": "string"

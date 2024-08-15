@@ -48,6 +48,8 @@ func (server *Server) setupRouter(l *zap.Logger) {
 	// health check router
 	router.GET("/health", server.health)
 
+	server.setupUserRouters(router)
+
 	server.setupGetResourceRouters(router)
 	server.setupCreateResourceRouters(router)
 	server.setupUpdateResourceRouters(router)
@@ -60,6 +62,10 @@ func (server *Server) setupRouter(l *zap.Logger) {
 
 func (server *Server) setupSwagger(router *gin.Engine) {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+}
+
+func (server *Server) setupUserRouters(router *gin.Engine) {
+	router.POST("/users", server.createUser)
 }
 
 func (server *Server) setupGetResourceRouters(router *gin.Engine) {

@@ -2,11 +2,47 @@ basePath: /
 definitions:
   api.createTodoRequest:
     properties:
+      owner:
+        type: string
       title:
         maxLength: 255
         type: string
     required:
+    - owner
     - title
+    type: object
+  api.createUserRequest:
+    properties:
+      email:
+        example: jain@jaingounchained.com
+        type: string
+      fullName:
+        example: Jain Bhavya
+        type: string
+      password:
+        example: weak_password
+        minLength: 6
+        type: string
+      username:
+        example: jaingounchained
+        type: string
+    required:
+    - email
+    - fullName
+    - password
+    - username
+    type: object
+  api.createUserResponse:
+    properties:
+      email:
+        example: jain@jaingounchained.com
+        type: string
+      fullName:
+        example: Jain Bhavya
+        type: string
+      username:
+        example: jaingounchained
+        type: string
     type: object
   api.getTodoAttachmentMetadataResponse:
     properties:
@@ -31,6 +67,8 @@ definitions:
         type: string
       fileCount:
         type: integer
+      owner:
+        type: string
       status:
         type: string
       title:
@@ -328,4 +366,30 @@ paths:
       summary: Get attachments
       tags:
       - attachments
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Creates a User
+      parameters:
+      - description: User details
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/api.createUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.createUserResponse'
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Creates a User
+      tags:
+      - users
 swagger: "2.0"
