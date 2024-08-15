@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -8,6 +9,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	db "github.com/jaingounchained/todo/db/sqlc"
 	storage "github.com/jaingounchained/todo/storage"
+	"github.com/jaingounchained/todo/token"
+	"github.com/jaingounchained/todo/util"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
@@ -15,16 +18,25 @@ import (
 
 // Server serves HTTP requests for todo service
 type Server struct {
-	store   db.Store
-	storage storage.Storage
-	router  *gin.Engine
+	config     util.Config
+	store      db.Store
+	tokenMaker token.Maker
+	storage    storage.Storage
+	router     *gin.Engine
 }
 
 // NewGinHandler creates a new HTTP server and setup routing
-func NewGinHandler(store db.Store, storage storage.Storage, l *zap.Logger) *Server {
+func NewGinHandler(config util.Config, store db.Store, storage storage.Storage, l *zap.Logger) (*Server, error) {
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token maker: %w", err)
+	}
+
 	server := &Server{
-		store:   store,
-		storage: storage,
+		config:     config,
+		store:      store,
+		tokenMaker: tokenMaker,
+		storage:    storage,
 	}
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -32,7 +44,7 @@ func NewGinHandler(store db.Store, storage storage.Storage, l *zap.Logger) *Serv
 	}
 
 	server.setupRouter(l)
-	return server
+	return server, nil
 }
 
 func (server *Server) setupRouter(l *zap.Logger) {
@@ -66,6 +78,7 @@ func (server *Server) setupSwagger(router *gin.Engine) {
 
 func (server *Server) setupUserRouters(router *gin.Engine) {
 	router.POST("/users", server.createUser)
+	router.POST("/users/login", server.loginUser)
 }
 
 func (server *Server) setupGetResourceRouters(router *gin.Engine) {

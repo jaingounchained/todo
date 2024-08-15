@@ -360,7 +360,7 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 			tc.buildDBStub(store, mockStorage, expectedFleContents)
 
 			// start test server and send request
-			server := NewGinHandler(store, mockStorage, nil)
+			server := newTestServer(t, store, mockStorage)
 			recorder := httptest.NewRecorder()
 
 			// Create a buffer to hold the multipart form data
@@ -411,7 +411,7 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 		store.EXPECT().UploadAttachmentTx(gomock.Any(), gomock.Any()).Times(0)
 
 		// start test server and send request
-		server := NewGinHandler(store, mockStorage, nil)
+		server := newTestServer(t, store, mockStorage)
 		recorder := httptest.NewRecorder()
 
 		// Marshal body data to JSON
@@ -624,7 +624,7 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 			tc.buildStorageStub(mockStorage)
 
 			// start test server and send request
-			server := NewGinHandler(store, mockStorage, nil)
+			server := newTestServer(t, store, mockStorage)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/todos/%d/attachments/%d", tc.todoID, tc.attachmentID)
@@ -758,7 +758,7 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 			tc.buildDBStub(store)
 
 			// start test server and send request
-			server := NewGinHandler(store, nil, nil)
+			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/todos/%d/attachments", tc.todoID)
@@ -939,7 +939,7 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 			tc.buildDBStub(store, mockStorage)
 
 			// start test server and send request
-			server := NewGinHandler(store, mockStorage, nil)
+			server := newTestServer(t, store, mockStorage)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/todos/%d/attachments/%d", tc.todoID, tc.attachmentID)

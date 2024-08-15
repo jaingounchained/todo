@@ -22,12 +22,12 @@ import (
 	"go.uber.org/zap"
 )
 
-//	@title			Todo API
-//	@version		1.0
-//	@description	A todo management service API in go which supports attachments
-//	@contact.name	Bhavya Jain
-//	@host			localhost:8080
-//	@BasePath		/
+// @title			Todo API
+// @version		1.0
+// @description	A todo management service API in go which supports attachments
+// @contact.name	Bhavya Jain
+// @host			localhost:8080
+// @BasePath		/
 func main() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
@@ -81,7 +81,13 @@ func main() {
 	}
 
 	// Initializing the http server
-	httpServer := api.NewGinHandler(store, storage, logger).HttpServer(config.ServerAddress)
+	server, err := api.NewGinHandler(config, store, storage, logger)
+	if err != nil {
+		logger.Fatal("Unable to create server", zap.Error(err))
+	}
+
+	httpServer := server.HttpServer(config.ServerAddress)
+
 	go startHTTPServer(logger, httpServer)
 
 	applicationShutdown(logger, done, httpServer, connPool, storage)

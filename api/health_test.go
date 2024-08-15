@@ -11,7 +11,7 @@ import (
 
 func TestGetHealthAPI(t *testing.T) {
 	// start test server and send request
-	server := NewGinHandler(nil, nil, nil)
+	server := newTestServer(t, nil, nil)
 	recorder := httptest.NewRecorder()
 
 	url := "/health"

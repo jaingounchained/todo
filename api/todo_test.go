@@ -147,7 +147,7 @@ func TestGetTodoAPI(t *testing.T) {
 			tc.buildDBStub(store)
 
 			// start test server and send request
-			server := NewGinHandler(store, nil, nil)
+			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/todos/%d", tc.todoID)
@@ -256,7 +256,7 @@ func TestCreateTodoAPI(t *testing.T) {
 			tc.buildDBStub(store, mockStorage)
 
 			// start test server and send request
-			server := NewGinHandler(store, mockStorage, nil)
+			server := newTestServer(t, store, mockStorage)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
@@ -384,7 +384,7 @@ func TestListTodoAPI(t *testing.T) {
 			tc.buildDBStub(store)
 
 			// start test server and send request
-			server := NewGinHandler(store, nil, nil)
+			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
 			url := "/todos"
@@ -596,7 +596,7 @@ func TestUpdateTodoAPI(t *testing.T) {
 			tc.buildDBStub(store)
 
 			// start test server and send request
-			server := NewGinHandler(store, nil, nil)
+			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
@@ -707,7 +707,7 @@ func TestDeleteTodoAPI(t *testing.T) {
 			tc.buildDBStub(store, mockStorage)
 
 			// start test server and send request
-			server := NewGinHandler(store, mockStorage, nil)
+			server := newTestServer(t, store, mockStorage)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/todos/%d", tc.todoID)
