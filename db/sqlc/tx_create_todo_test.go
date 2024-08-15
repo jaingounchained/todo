@@ -13,6 +13,8 @@ import (
 
 // TODO: Improve tests by using anonymous struct
 func TestCreateTodoTxOK(t *testing.T) {
+	user := createRandomUser(t)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -28,6 +30,7 @@ func TestCreateTodoTxOK(t *testing.T) {
 	todoTitle := util.RandomString(10)
 
 	result, err := testStore.CreateTodoTx(context.Background(), CreateTodoTxParams{
+		TodoOwner: user.Username,
 		TodoTitle: todoTitle,
 		Storage:   testMockStorage,
 	})
@@ -43,6 +46,8 @@ func TestCreateTodoTxOK(t *testing.T) {
 }
 
 func TestCreateTodoTxStorageFailure(t *testing.T) {
+	user := createRandomUser(t)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -60,6 +65,7 @@ func TestCreateTodoTxStorageFailure(t *testing.T) {
 	todoTitle := util.RandomString(10)
 
 	result, err := testStore.CreateTodoTx(context.Background(), CreateTodoTxParams{
+		TodoOwner: user.Username,
 		TodoTitle: todoTitle,
 		Storage:   testMockStorage,
 	})

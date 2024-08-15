@@ -8,6 +8,7 @@ import (
 
 // Input parameters for the upload attachment transaction
 type CreateTodoTxParams struct {
+	TodoOwner string
 	TodoTitle string
 
 	// TODO: Can improve this by returning only relevant closure from Storage instead of whole object
@@ -27,7 +28,10 @@ func (store *SQLStore) CreateTodoTx(ctx context.Context, arg CreateTodoTxParams)
 		var err error
 
 		// Insert todo
-		result.Todo, err = q.CreateTodo(ctx, arg.TodoTitle)
+		result.Todo, err = q.CreateTodo(ctx, CreateTodoParams{
+			Owner: arg.TodoOwner,
+			Title: arg.TodoTitle,
+		})
 		if err != nil {
 			return err
 		}

@@ -10,7 +10,7 @@ import (
 
 type Querier interface {
 	CreateAttachment(ctx context.Context, arg CreateAttachmentParams) (Attachment, error)
-	CreateTodo(ctx context.Context, title string) (Todo, error)
+	CreateTodo(ctx context.Context, arg CreateTodoParams) (Todo, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteAttachment(ctx context.Context, id int64) error
 	DeleteAttachmentsOfTodo(ctx context.Context, todoID int64) error

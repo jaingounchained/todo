@@ -51,7 +51,7 @@ func (mr *MockStoreMockRecorder) CreateAttachment(arg0, arg1 interface{}) *gomoc
 }
 
 // CreateTodo mocks base method.
-func (m *MockStore) CreateTodo(arg0 context.Context, arg1 string) (db.Todo, error) {
+func (m *MockStore) CreateTodo(arg0 context.Context, arg1 db.CreateTodoParams) (db.Todo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateTodo", arg0, arg1)
 	ret0, _ := ret[0].(db.Todo)

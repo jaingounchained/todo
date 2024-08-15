@@ -11,14 +11,20 @@ import (
 
 const createTodo = `-- name: CreateTodo :one
 INSERT INTO todos (
+    owner,
     title
 ) VALUES (
-    $1
+    $1, $2
 ) RETURNING id, title, status, created_at, file_count, owner
 `
 
-func (q *Queries) CreateTodo(ctx context.Context, title string) (Todo, error) {
-	row := q.db.QueryRow(ctx, createTodo, title)
+type CreateTodoParams struct {
+	Owner string `json:"owner"`
+	Title string `json:"title"`
+}
+
+func (q *Queries) CreateTodo(ctx context.Context, arg CreateTodoParams) (Todo, error) {
+	row := q.db.QueryRow(ctx, createTodo, arg.Owner, arg.Title)
 	var i Todo
 	err := row.Scan(
 		&i.ID,

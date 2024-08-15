@@ -10,13 +10,19 @@ import (
 )
 
 func createRandomTodo(t *testing.T) Todo {
-	title := util.RandomString(10)
+	user := createRandomUser(t)
 
-	todo, err := testStore.CreateTodo(context.Background(), title)
+	arg := CreateTodoParams{
+		Owner: user.Username,
+		Title: util.RandomString(10),
+	}
+
+	todo, err := testStore.CreateTodo(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, todo)
 
-	require.Equal(t, todo.Title, title)
+	require.Equal(t, arg.Owner, todo.Owner)
+	require.Equal(t, arg.Title, todo.Title)
 
 	require.NotZero(t, todo.ID)
 	require.Equal(t, todo.FileCount, int32(0))
@@ -28,6 +34,7 @@ func createRandomTodo(t *testing.T) Todo {
 
 func compareTodos(t *testing.T, todo1, todo2 Todo) {
 	require.Equal(t, todo1.ID, todo2.ID)
+	require.Equal(t, todo1.Owner, todo2.Owner)
 	require.Equal(t, todo1.Title, todo2.Title)
 	require.Equal(t, todo1.Status, todo2.Status)
 	require.Equal(t, todo1.FileCount, todo2.FileCount)

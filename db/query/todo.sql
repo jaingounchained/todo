@@ -1,8 +1,9 @@
 -- name: CreateTodo :one
 INSERT INTO todos (
+    owner,
     title
 ) VALUES (
-    $1
+    $1, $2
 ) RETURNING *;
 
 -- name: GetTodo :one
