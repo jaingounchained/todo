@@ -57,7 +57,7 @@ func EqCreateUserTxParams(arg db.CreateUserTxParams, password string, user db.Us
 	}
 }
 
-func randomUser(t *testing.T) (user db.User, password string) {
+func randomUser(t *testing.T, role string) (user db.User, password string) {
 	password = util.RandomString(10)
 	hashedPassword, err := util.HashPassword(password)
 	require.NoError(t, err)
@@ -65,6 +65,7 @@ func randomUser(t *testing.T) (user db.User, password string) {
 	user = db.User{
 		Username:       util.RandomOwner(),
 		HashedPassword: hashedPassword,
+		Role:           role,
 		FullName:       util.RandomOwner(),
 		Email:          util.RandomEmail(),
 	}
@@ -72,7 +73,7 @@ func randomUser(t *testing.T) (user db.User, password string) {
 }
 
 func TestCreateUserAPI(t *testing.T) {
-	user, password := randomUser(t)
+	user, password := randomUser(t, util.UserRole)
 
 	testCases := []struct {
 		name          string
