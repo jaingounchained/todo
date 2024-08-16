@@ -11,17 +11,28 @@ services:
       - /tmp/todo/pg-data/:/var/lib/postgresql/data
     networks:
       - todo-network
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - /tmp/todo/redis-data/:/data
+    networks:
+      - todo-network
   api:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
+      - "9090:9090"
     environment:
       - GIN_MODE=release
       - DB_SOURCE=postgresql://root:secret@postgres:5432/todos?sslmode=disable
+      - REDIS_ADDRESS=redis:6379
     depends_on:
       - postgres
+      - redis
     entrypoint:
       [
         "/app/wait-for.sh",

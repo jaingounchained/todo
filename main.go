@@ -15,6 +15,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/hibiken/asynq"
 	_ "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
@@ -23,8 +24,10 @@ import (
 	db "github.com/jaingounchained/todo/db/sqlc"
 	_ "github.com/jaingounchained/todo/docs"
 	"github.com/jaingounchained/todo/gapi"
+	"github.com/jaingounchained/todo/mail"
 	"github.com/jaingounchained/todo/pb"
 	storage "github.com/jaingounchained/todo/storage"
+	"github.com/jaingounchained/todo/worker"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	localStorage "github.com/jaingounchained/todo/storage/local_directory"
@@ -65,17 +68,24 @@ func main() {
 	}
 	log.Info().Msg("logger setup")
 
-	// Setup Postgres DB
-	dbStore := setupDBConn(ctx, config)
-
 	// Setup Storage
-	storage := setupStorage(ctx, config)
+	// storage := setupStorage(ctx, config)
+
+	// Setup Postgres DB
+	store := setupDBConn(ctx, config)
+
+	redisOpt := asynq.RedisClientOpt{
+		Addr: config.RedisAddress,
+	}
+
+	taskDistributor := worker.NewRedisTaskDistrubitor(redisOpt)
 
 	waitGroup, ctx := errgroup.WithContext(ctx)
 
-	// runGatewayServer(config, store)
-	runGRPCServer(ctx, waitGroup, config, dbStore)
-	startHTTPGinServer(ctx, waitGroup, config, dbStore, storage)
+	go runTaskProcessor(config, redisOpt, store)
+	runGRPCServer(ctx, waitGroup, config, store, taskDistributor)
+	runGatewayServer(ctx, waitGroup, config, store, taskDistributor)
+	// startHTTPGinServer(ctx, waitGroup, config, store, storage)
 
 	err = waitGroup.Wait()
 	if err != nil {
@@ -144,13 +154,28 @@ func setupStorage(
 	return storage
 }
 
+func runTaskProcessor(
+	config util.Config,
+	redisOpt asynq.RedisClientOpt,
+	store db.Store,
+) {
+	mailer := mail.NewMockSender(config.MockEmailSenderLocalDir)
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store, mailer)
+	log.Info().Msg("start task processor")
+	err := taskProcessor.Start()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start task processor")
+	}
+}
+
 func runGRPCServer(
 	ctx context.Context,
 	waitGroup *errgroup.Group,
 	config util.Config,
 	store db.Store,
+	taskDistributor worker.TaskDistributor,
 ) {
-	server, err := gapi.NewGRPCServer(config, store)
+	server, err := gapi.NewGRPCServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Err(err).Msg("unable to create grpc server")
 	}
@@ -196,8 +221,9 @@ func runGatewayServer(
 	waitGroup *errgroup.Group,
 	config util.Config,
 	store db.Store,
+	taskDistributor worker.TaskDistributor,
 ) {
-	server, err := gapi.NewGRPCServer(config, store)
+	server, err := gapi.NewGRPCServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Err(err).Msg("unable to create grpc server")
 	}

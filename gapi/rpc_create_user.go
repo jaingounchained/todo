@@ -2,11 +2,14 @@ package gapi
 
 import (
 	"context"
+	"time"
 
+	"github.com/hibiken/asynq"
 	db "github.com/jaingounchained/todo/db/sqlc"
 	"github.com/jaingounchained/todo/pb"
 	"github.com/jaingounchained/todo/util"
 	"github.com/jaingounchained/todo/val"
+	"github.com/jaingounchained/todo/worker"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,11 +26,26 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		return nil, status.Errorf(codes.Internal, "failed to hash password: %s", err)
 	}
 
-	user, err := server.store.CreateUser(ctx, db.CreateUserParams{
-		Username:       req.GetUsername(),
-		HashedPassword: hashedPassword,
-		FullName:       req.GetFullName(),
-		Email:          req.GetEmail(),
+	result, err := server.store.CreateUserTx(ctx, db.CreateUserTxParams{
+		CreateUserParams: db.CreateUserParams{
+			Username:       req.GetUsername(),
+			HashedPassword: hashedPassword,
+			FullName:       req.GetFullName(),
+			Email:          req.GetEmail(),
+		},
+		AfterCreate: func(user db.User) error {
+			return server.taskDistributor.DistributeTaskSendVerifyEmail(
+				ctx,
+				// payload
+				&worker.PayloadSendVerifyEmail{
+					Username: user.Username,
+				},
+				// asynq options
+				asynq.MaxRetry(10),
+				asynq.ProcessIn(10*time.Second),
+				asynq.Queue(worker.QueueCritical),
+			)
+		},
 	})
 	if err != nil {
 		if db.ErrorCode(err) == db.UniqueViolation {
@@ -37,7 +55,7 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 	}
 
 	return &pb.CreateUserResponse{
-		User: convertUser(user),
+		User: convertUser(result.User),
 	}, nil
 }
 

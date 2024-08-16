@@ -15,6 +15,7 @@ type Querier interface {
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateTodo(ctx context.Context, arg CreateTodoParams) (Todo, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateVerifyEmail(ctx context.Context, arg CreateVerifyEmailParams) (VerifyEmail, error)
 	DeleteAttachment(ctx context.Context, id int64) error
 	DeleteAttachmentsOfTodo(ctx context.Context, todoID int64) error
 	DeleteTodo(ctx context.Context, id int64) error
@@ -26,6 +27,8 @@ type Querier interface {
 	ListTodos(ctx context.Context, arg ListTodosParams) ([]Todo, error)
 	UpdateTodoFileCount(ctx context.Context, arg UpdateTodoFileCountParams) (Todo, error)
 	UpdateTodoTitleStatus(ctx context.Context, arg UpdateTodoTitleStatusParams) (Todo, error)
+	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpdateVerifyEmail(ctx context.Context, arg UpdateVerifyEmailParams) (VerifyEmail, error)
 }
 
 var _ Querier = (*Queries)(nil)
