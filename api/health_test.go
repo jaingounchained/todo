@@ -18,7 +18,7 @@ func TestGetHealthAPI(t *testing.T) {
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	require.NoError(t, err)
 
-	server.router.ServeHTTP(recorder, request)
+	server.Router.ServeHTTP(recorder, request)
 
 	data, err := io.ReadAll(recorder.Body)
 	require.NoError(t, err)

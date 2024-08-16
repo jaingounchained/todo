@@ -427,7 +427,7 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 			request.Header.Set("Content-Type", multipartWriter.FormDataContentType())
 
 			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
+			server.Router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
 				tc.checkErrorResponse(recorder, tc.expectedError)
@@ -465,7 +465,7 @@ func TestUploadTodoAttachmentsAPI(t *testing.T) {
 
 		addAuthorization(t, request, server.tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 
-		server.router.ServeHTTP(recorder, request)
+		server.Router.ServeHTTP(recorder, request)
 		assert.Equal(t, http.StatusBadRequest, recorder.Code)
 		assertBodyMatchError(t, recorder.Body, invalidHeaderContentTypeError)
 	})
@@ -700,7 +700,7 @@ func TestGetTodoAttachmentAPI(t *testing.T) {
 			assert.NoError(t, err)
 
 			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
+			server.Router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
 				tc.checkErrorResponse(recorder, tc.expectedError)
@@ -855,7 +855,7 @@ func TestGetTodoAttachmentMetadataAPI(t *testing.T) {
 			assert.NoError(t, err)
 
 			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
+			server.Router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
 				tc.checkErrorResponse(recorder, tc.expectedError)
@@ -1064,7 +1064,7 @@ func TestDeleteTodoAttachmentAPI(t *testing.T) {
 			assert.NoError(t, err)
 
 			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
+			server.Router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
 				tc.checkErrorResponse(recorder, tc.expectedError)

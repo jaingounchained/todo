@@ -7,9 +7,11 @@ import (
 )
 
 type Config struct {
+	Environment           string        `mapstructure:"ENVIRONMENT"`
 	DBDriver              string        `mapstructure:"DB_DRIVER"`
 	DBSource              string        `mapstructure:"DB_SOURCE"`
-	ServerAddress         string        `mapstructure:"SERVER_ADDRESS"`
+	HTTPServerAddress     string        `mapstructure:"HTTP_SERVER_ADDRESS"`
+	GRPCServerAddress     string        `mapstructure:"GRPC_SERVER_ADDRESS"`
 	StorageType           string        `mapstructure:"STORAGE_TYPE"`
 	LocalStorageDirectory string        `mapstructure:"LOCAL_STORAGE_DIRECTORY"`
 	TokenSymmetricKey     string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`

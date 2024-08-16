@@ -199,7 +199,7 @@ func TestGetTodoAPI(t *testing.T) {
 			assert.NoError(t, err)
 
 			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
+			server.Router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
 				tc.checkErrorResponse(recorder, tc.expectedError)
@@ -328,7 +328,7 @@ func TestCreateTodoAPI(t *testing.T) {
 			assert.NoError(t, err)
 
 			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
+			server.Router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
 				tc.checkErrorResponse(recorder, tc.expectedError)
@@ -475,7 +475,7 @@ func TestListTodoAPI(t *testing.T) {
 			request.URL.RawQuery = q.Encode()
 
 			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
+			server.Router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
 				tc.checkErrorResponse(recorder, tc.expectedError)
@@ -729,7 +729,7 @@ func TestUpdateTodoAPI(t *testing.T) {
 			assert.NoError(t, err)
 
 			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
+			server.Router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
 				tc.checkErrorResponse(recorder, tc.expectedError)
@@ -851,7 +851,7 @@ func TestDeleteTodoAPI(t *testing.T) {
 			assert.NoError(t, err)
 
 			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
+			server.Router.ServeHTTP(recorder, request)
 			// check response/error
 			if tc.errorExpected {
 				tc.checkErrorResponse(recorder, tc.expectedError)

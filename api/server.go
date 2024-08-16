@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -21,7 +20,7 @@ type Server struct {
 	store      db.Store
 	tokenMaker token.Maker
 	storage    storage.Storage
-	router     *gin.Engine
+	Router     *gin.Engine
 }
 
 // NewGinHandler creates a new HTTP server and setup routing
@@ -66,7 +65,7 @@ func (server *Server) setupRouter() {
 	server.setupUpdateResourceRouters(authRouterGroup)
 	server.setupDeleteResourceRouters(authRouterGroup)
 
-	server.router = router
+	server.Router = router
 }
 
 func (server *Server) setupSwagger(router *gin.Engine) {
@@ -102,12 +101,4 @@ func (server *Server) setupDeleteResourceRouters(authRouterGroup gin.IRoutes) {
 	authRouterGroup.DELETE("/todos/:todoId/attachments/:attachmentId", server.deleteTodoAttachment)
 
 	authRouterGroup.DELETE("/todos/:todoId", server.deleteTodo)
-}
-
-// Start runs the HTTP server on a specific address
-func (server *Server) HttpServer(address string) *http.Server {
-	return &http.Server{
-		Addr:    address,
-		Handler: server.router,
-	}
 }
