@@ -94,7 +94,7 @@ func (server *Server) setupCreateResourceRouters(authRouterGroup gin.IRoutes) {
 }
 
 func (server *Server) setupUpdateResourceRouters(authRouterGroup gin.IRoutes) {
-	authRouterGroup.PATCH("/todos/:todoId", server.updateTodoTitleStatus)
+	authRouterGroup.PATCH("/todos/:todoId", server.updateTodo)
 }
 
 func (server *Server) setupDeleteResourceRouters(authRouterGroup gin.IRoutes) {

@@ -2,17 +2,14 @@ package db
 
 import (
 	"context"
-
-	storage "github.com/jaingounchained/todo/storage"
 )
 
 // Input parameters for the upload attachment transaction
 type CreateTodoTxParams struct {
-	TodoOwner string
-	TodoTitle string
+	CreateTodoParams
 
-	// TODO: Can improve this by returning only relevant closure from Storage instead of whole object
-	Storage storage.Storage
+	SetupTodoAttachmentStorage func(todo Todo) error
+	StartSendingReminders      func(todo Todo) error
 }
 
 // Result of upload attachment transaction
@@ -28,16 +25,26 @@ func (store *SQLStore) CreateTodoTx(ctx context.Context, arg CreateTodoTxParams)
 		var err error
 
 		// Insert todo
-		result.Todo, err = q.CreateTodo(ctx, CreateTodoParams{
-			Owner: arg.TodoOwner,
-			Title: arg.TodoTitle,
-		})
+		result.Todo, err = q.CreateTodo(ctx, arg.CreateTodoParams)
 		if err != nil {
 			return err
 		}
 
-		// Create file
-		return arg.Storage.CreateTodoDirectory(ctx, result.Todo.ID)
+		// Setup storage
+		err = arg.SetupTodoAttachmentStorage(result.Todo)
+		if err != nil {
+			// TODO: Think about how to rollback the storage
+			return err
+		}
+
+		// Start reminder
+		err = arg.StartSendingReminders(result.Todo)
+		if err != nil {
+			// TODO: Think about how to rollback reminder process if initiated
+			return err
+		}
+
+		return nil
 	})
 
 	return result, err

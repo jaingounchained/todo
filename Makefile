@@ -52,7 +52,7 @@ mock-wk:
 	mockgen -package mockwk -destination worker/mock/distributor.go github.com/jaingounchained/todo/worker TaskDistributor
 
 mock-storage:
-	mockgen -package mockStorage -destination storage/mock/storage.go github.com/jaingounchained/todo/storage Storage
+	mockgen -package mockstorage -destination storage/mock/storage.go github.com/jaingounchained/todo/storage Storage
 
 docker-build:
 	docker build -t todos:latest .

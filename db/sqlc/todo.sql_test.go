@@ -89,13 +89,13 @@ func TestUpdateTodoTitleStatus(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			arg := UpdateTodoTitleStatusParams{
+			arg := UpdateTodoParams{
 				ID:     tc.todo.ID,
 				Title:  tc.updatedTitle,
 				Status: tc.updatedStatus,
 			}
 
-			todo2, err := testStore.UpdateTodoTitleStatus(context.Background(), arg)
+			todo2, err := testStore.UpdateTodo(context.Background(), arg)
 
 			require.NoError(t, err)
 			require.NotEmpty(t, todo2)

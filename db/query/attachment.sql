@@ -3,7 +3,7 @@ INSERT INTO attachments (
     todo_id,
     original_filename,
     storage_filename
-    ) VALUES (
+) VALUES (
     $1, $2, $3
 ) RETURNING *;
 

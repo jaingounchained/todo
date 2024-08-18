@@ -6,6 +6,7 @@ import (
 	"github.com/hibiken/asynq"
 	db "github.com/jaingounchained/todo/db/sqlc"
 	"github.com/jaingounchained/todo/mail"
+	"github.com/jaingounchained/todo/notification"
 	"github.com/rs/zerolog/log"
 )
 
@@ -16,22 +17,22 @@ const (
 
 type TaskProcessor interface {
 	Start() error
-	ProcessTaskSendVerifyEmail(
-		ctx context.Context,
-		task *asynq.Task,
-	) error
+	ProcessTaskSendVerifyEmail(ctx context.Context, task *asynq.Task) error
+	ProcessTaskSendTodoNotification(ctx context.Context, task *asynq.Task) error
 }
 
 type RedisTaskProcessor struct {
-	server *asynq.Server
-	store  db.Store
-	mailer mail.EmailSender
+	server   *asynq.Server
+	store    db.Store
+	mailer   mail.EmailSender
+	notifier notification.NotificationSender
 }
 
 func NewRedisTaskProcessor(
 	redisOpt asynq.RedisClientOpt,
 	store db.Store,
 	mailer mail.EmailSender,
+	notifier notification.NotificationSender,
 ) TaskProcessor {
 	server := asynq.NewServer(
 		redisOpt,
@@ -52,9 +53,10 @@ func NewRedisTaskProcessor(
 	)
 
 	return &RedisTaskProcessor{
-		server: server,
-		store:  store,
-		mailer: mailer,
+		server:   server,
+		store:    store,
+		mailer:   mailer,
+		notifier: notifier,
 	}
 }
 
@@ -62,6 +64,7 @@ func (processor *RedisTaskProcessor) Start() error {
 	mux := asynq.NewServeMux()
 
 	mux.HandleFunc(TaskSendVerifyEmail, processor.ProcessTaskSendVerifyEmail)
+	mux.HandleFunc(TaskSendTodoNotification, processor.ProcessTaskSendTodoNotification)
 
 	return processor.server.Start(mux)
 }

@@ -30,12 +30,13 @@ type Session struct {
 }
 
 type Todo struct {
-	ID        int64     `json:"todoId"`
-	Title     string    `json:"title"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"createdAt"`
-	FileCount int32     `json:"fileCount"`
-	Owner     string    `json:"owner"`
+	ID                          int64     `json:"todoId"`
+	Title                       string    `json:"title"`
+	Status                      string    `json:"status"`
+	CreatedAt                   time.Time `json:"createdAt"`
+	FileCount                   int32     `json:"fileCount"`
+	Owner                       string    `json:"owner"`
+	PeriodicReminderTimeSeconds *int32    `json:"periodicReminderTimeSeconds"`
 }
 
 type User struct {

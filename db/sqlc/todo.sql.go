@@ -12,19 +12,21 @@ import (
 const createTodo = `-- name: CreateTodo :one
 INSERT INTO todos (
     owner,
-    title
+    title,
+    periodic_reminder_time_seconds
 ) VALUES (
-    $1, $2
-) RETURNING id, title, status, created_at, file_count, owner
+    $1, $2, $3
+) RETURNING id, title, status, created_at, file_count, owner, periodic_reminder_time_seconds
 `
 
 type CreateTodoParams struct {
-	Owner string `json:"owner"`
-	Title string `json:"title"`
+	Owner                       string `json:"owner"`
+	Title                       string `json:"title"`
+	PeriodicReminderTimeSeconds *int32 `json:"periodicReminderTimeSeconds"`
 }
 
 func (q *Queries) CreateTodo(ctx context.Context, arg CreateTodoParams) (Todo, error) {
-	row := q.db.QueryRow(ctx, createTodo, arg.Owner, arg.Title)
+	row := q.db.QueryRow(ctx, createTodo, arg.Owner, arg.Title, arg.PeriodicReminderTimeSeconds)
 	var i Todo
 	err := row.Scan(
 		&i.ID,
@@ -33,6 +35,7 @@ func (q *Queries) CreateTodo(ctx context.Context, arg CreateTodoParams) (Todo, e
 		&i.CreatedAt,
 		&i.FileCount,
 		&i.Owner,
+		&i.PeriodicReminderTimeSeconds,
 	)
 	return i, err
 }
@@ -48,7 +51,7 @@ func (q *Queries) DeleteTodo(ctx context.Context, id int64) error {
 }
 
 const getTodo = `-- name: GetTodo :one
-SELECT id, title, status, created_at, file_count, owner FROM todos
+SELECT id, title, status, created_at, file_count, owner, periodic_reminder_time_seconds FROM todos
 WHERE id = $1 LIMIT 1
 `
 
@@ -62,12 +65,13 @@ func (q *Queries) GetTodo(ctx context.Context, id int64) (Todo, error) {
 		&i.CreatedAt,
 		&i.FileCount,
 		&i.Owner,
+		&i.PeriodicReminderTimeSeconds,
 	)
 	return i, err
 }
 
 const listTodos = `-- name: ListTodos :many
-SELECT id, title, status, created_at, file_count, owner FROM todos
+SELECT id, title, status, created_at, file_count, owner, periodic_reminder_time_seconds FROM todos
 WHERE owner = $1
 ORDER BY id
 LIMIT $2
@@ -96,6 +100,7 @@ func (q *Queries) ListTodos(ctx context.Context, arg ListTodosParams) ([]Todo, e
 			&i.CreatedAt,
 			&i.FileCount,
 			&i.Owner,
+			&i.PeriodicReminderTimeSeconds,
 		); err != nil {
 			return nil, err
 		}
@@ -107,11 +112,47 @@ func (q *Queries) ListTodos(ctx context.Context, arg ListTodosParams) ([]Todo, e
 	return items, nil
 }
 
+const updateTodo = `-- name: UpdateTodo :one
+UPDATE todos
+SET title = COALESCE($2, title),
+    status = COALESCE($3, status),
+    periodic_reminder_time_seconds = COALESCE($4, periodic_reminder_time_seconds)
+WHERE id = $1
+RETURNING id, title, status, created_at, file_count, owner, periodic_reminder_time_seconds
+`
+
+type UpdateTodoParams struct {
+	ID                          int64   `json:"todoId"`
+	Title                       *string `json:"title"`
+	Status                      *string `json:"status"`
+	PeriodicReminderTimeSeconds *int32  `json:"periodicReminderTimeSeconds"`
+}
+
+func (q *Queries) UpdateTodo(ctx context.Context, arg UpdateTodoParams) (Todo, error) {
+	row := q.db.QueryRow(ctx, updateTodo,
+		arg.ID,
+		arg.Title,
+		arg.Status,
+		arg.PeriodicReminderTimeSeconds,
+	)
+	var i Todo
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Status,
+		&i.CreatedAt,
+		&i.FileCount,
+		&i.Owner,
+		&i.PeriodicReminderTimeSeconds,
+	)
+	return i, err
+}
+
 const updateTodoFileCount = `-- name: UpdateTodoFileCount :one
 UPDATE todos
 SET file_count = file_count + $2
 WHERE id = $1
-RETURNING id, title, status, created_at, file_count, owner
+RETURNING id, title, status, created_at, file_count, owner, periodic_reminder_time_seconds
 `
 
 type UpdateTodoFileCountParams struct {
@@ -129,34 +170,7 @@ func (q *Queries) UpdateTodoFileCount(ctx context.Context, arg UpdateTodoFileCou
 		&i.CreatedAt,
 		&i.FileCount,
 		&i.Owner,
-	)
-	return i, err
-}
-
-const updateTodoTitleStatus = `-- name: UpdateTodoTitleStatus :one
-UPDATE todos
-SET title = COALESCE($2, title),
-    status = COALESCE($3, status)
-WHERE id = $1
-RETURNING id, title, status, created_at, file_count, owner
-`
-
-type UpdateTodoTitleStatusParams struct {
-	ID     int64   `json:"todoId"`
-	Title  *string `json:"title"`
-	Status *string `json:"status"`
-}
-
-func (q *Queries) UpdateTodoTitleStatus(ctx context.Context, arg UpdateTodoTitleStatusParams) (Todo, error) {
-	row := q.db.QueryRow(ctx, updateTodoTitleStatus, arg.ID, arg.Title, arg.Status)
-	var i Todo
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Status,
-		&i.CreatedAt,
-		&i.FileCount,
-		&i.Owner,
+		&i.PeriodicReminderTimeSeconds,
 	)
 	return i, err
 }

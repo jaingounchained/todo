@@ -43,7 +43,8 @@ func (server *Server) getTodo(ctx *gin.Context) {
 }
 
 type createTodoRequest struct {
-	Title string `json:"title" binding:"required,max=255"`
+	Title                       string `json:"title" binding:"required,max=255"`
+	PeriodicReminderTimeSeconds *int32 `json:"periodicReminderTimeSeconds" binding:"min=10"`
 }
 
 // createTodo godoc
@@ -70,9 +71,17 @@ func (server *Server) createTodo(ctx *gin.Context) {
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
 	result, err := server.store.CreateTodoTx(ctx, db.CreateTodoTxParams{
-		TodoOwner: authPayload.Username,
-		TodoTitle: req.Title,
-		Storage:   server.storage,
+		CreateTodoParams: db.CreateTodoParams{
+			Owner:                       authPayload.Username,
+			Title:                       req.Title,
+			PeriodicReminderTimeSeconds: req.PeriodicReminderTimeSeconds,
+		},
+		SetupTodoAttachmentStorage: func(todo db.Todo) error {
+			panic("unimplemented")
+		},
+		StartSendingReminders: func(todo db.Todo) error {
+			panic("unimplemented")
+		},
 	})
 	if err != nil {
 		NewHTTPError(ctx, http.StatusInternalServerError, err)
@@ -151,7 +160,7 @@ type updateTodoRequestBody struct {
 //	@Failure		500
 //	@Security		AccessTokenAuth
 //	@Router			/todos/{todoId} [patch]
-func (server *Server) updateTodoTitleStatus(ctx *gin.Context) {
+func (server *Server) updateTodo(ctx *gin.Context) {
 	// Bind ID
 	var reqURIParams updateTodoRequestURIParams
 	if err := ctx.ShouldBindUri(&reqURIParams); err != nil {
@@ -177,7 +186,7 @@ func (server *Server) updateTodoTitleStatus(ctx *gin.Context) {
 		return
 	}
 
-	updatedTodo, err := server.store.UpdateTodoTitleStatus(ctx, db.UpdateTodoTitleStatusParams{
+	updatedTodo, err := server.store.UpdateTodo(ctx, db.UpdateTodoParams{
 		ID:     reqURIParams.TodoID,
 		Title:  reqBody.Title,
 		Status: reqBody.Status,

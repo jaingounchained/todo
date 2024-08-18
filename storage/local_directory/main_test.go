@@ -1,4 +1,4 @@
-package storage
+package localstorage
 
 import (
 	"os"
@@ -22,7 +22,8 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	localStorageTest, err = New(testLocalDirectoryPath)
+	storage, err := NewLocalStorage(testLocalDirectoryPath)
+	localStorageTest = storage.(*LocalStorage)
 	if err != nil {
 		os.Exit(1)
 	}

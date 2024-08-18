@@ -110,7 +110,7 @@ func setupDBConn(
 	// run db migration
 	runDBMigration(config.MigrationURL, config.DBSource)
 
-	return db.NewStore(connPool)
+	return db.NewSQLStore(connPool)
 }
 
 func runDBMigration(migrationURL, dbSource string) {
@@ -141,7 +141,7 @@ func setupStorage(
 	case "LOCAL":
 		localStoragePath := filepath.Join(cwd, config.LocalStorageDirectory)
 
-		storage, err = localStorage.New(localStoragePath)
+		storage, err = localStorage.NewLocalStorage(localStoragePath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("cannot setup file storage for the local storageType")
 		}

@@ -18,7 +18,7 @@ func RandomInt(min, max int64) int64 {
 }
 
 func RandomStatus() string {
-	statuses := []string{complete, incomplete}
+	statuses := []string{TodoStatusComplete, TodoStatusIncomplete}
 	n := len(statuses)
 	return statuses[rand.Intn(n)]
 }

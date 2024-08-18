@@ -516,7 +516,7 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Any()).Times(0)
-				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
+				store.EXPECT().UpdateTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
 			expectedError: todoIDInvalidError,
@@ -536,7 +536,7 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
-				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
+				store.EXPECT().UpdateTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
 			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
@@ -554,7 +554,7 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
-				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
+				store.EXPECT().UpdateTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
 			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
@@ -572,7 +572,7 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
-				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
+				store.EXPECT().UpdateTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
 			checkErrorResponse: func(recorder *httptest.ResponseRecorder, err error) {
@@ -588,7 +588,7 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
-				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
+				store.EXPECT().UpdateTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
 			expectedError: updateTodoTitleStatusInvalidBodyError,
@@ -609,7 +609,7 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(db.Todo{}, db.ErrRecordNotFound)
-				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(0)
+				store.EXPECT().UpdateTodo(gomock.Any(), gomock.Any()).Times(0)
 			},
 			errorExpected: true,
 			expectedError: &ResourceNotFoundError{
@@ -633,7 +633,7 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
-				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Any()).Times(1).Return(db.Todo{}, sql.ErrConnDone)
+				store.EXPECT().UpdateTodo(gomock.Any(), gomock.Any()).Times(1).Return(db.Todo{}, sql.ErrConnDone)
 			},
 			errorExpected: true,
 			expectedError: sql.ErrConnDone,
@@ -653,11 +653,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
-				arg := db.UpdateTodoTitleStatusParams{
+				arg := db.UpdateTodoParams{
 					ID:    todo.ID,
 					Title: &updatedTitle,
 				}
-				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Eq(arg)).Times(1).Return(todo, nil)
+				store.EXPECT().UpdateTodo(gomock.Any(), gomock.Eq(arg)).Times(1).Return(todo, nil)
 			},
 			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
 				assert.Equal(t, http.StatusOK, recorder.Code)
@@ -675,11 +675,11 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
-				arg := db.UpdateTodoTitleStatusParams{
+				arg := db.UpdateTodoParams{
 					ID:     todo.ID,
 					Status: &updatedStatus,
 				}
-				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Eq(arg)).Times(1).Return(todo, nil)
+				store.EXPECT().UpdateTodo(gomock.Any(), gomock.Eq(arg)).Times(1).Return(todo, nil)
 			},
 			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
 				assert.Equal(t, http.StatusOK, recorder.Code)
@@ -698,12 +698,12 @@ func TestUpdateTodoAPI(t *testing.T) {
 			},
 			buildDBStub: func(store *mockdb.MockStore) {
 				store.EXPECT().GetTodo(gomock.Any(), gomock.Eq(todo.ID)).Times(1).Return(todo, nil)
-				arg := db.UpdateTodoTitleStatusParams{
+				arg := db.UpdateTodoParams{
 					ID:     todo.ID,
 					Title:  &updatedTitle,
 					Status: &updatedStatus,
 				}
-				store.EXPECT().UpdateTodoTitleStatus(gomock.Any(), gomock.Eq(arg)).Times(1).Return(todo, nil)
+				store.EXPECT().UpdateTodo(gomock.Any(), gomock.Eq(arg)).Times(1).Return(todo, nil)
 			},
 			checkOKResponse: func(recorder *httptest.ResponseRecorder) {
 				assert.Equal(t, http.StatusOK, recorder.Code)

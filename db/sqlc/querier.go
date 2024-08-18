@@ -25,8 +25,8 @@ type Querier interface {
 	GetUser(ctx context.Context, username string) (User, error)
 	ListAttachmentOfTodo(ctx context.Context, todoID int64) ([]Attachment, error)
 	ListTodos(ctx context.Context, arg ListTodosParams) ([]Todo, error)
+	UpdateTodo(ctx context.Context, arg UpdateTodoParams) (Todo, error)
 	UpdateTodoFileCount(ctx context.Context, arg UpdateTodoFileCountParams) (Todo, error)
-	UpdateTodoTitleStatus(ctx context.Context, arg UpdateTodoTitleStatusParams) (Todo, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateVerifyEmail(ctx context.Context, arg UpdateVerifyEmailParams) (VerifyEmail, error)
 }

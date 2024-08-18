@@ -1,9 +1,10 @@
 -- name: CreateTodo :one
 INSERT INTO todos (
     owner,
-    title
+    title,
+    periodic_reminder_time_seconds
 ) VALUES (
-    $1, $2
+    $1, $2, $3
 ) RETURNING *;
 
 -- name: GetTodo :one
@@ -17,10 +18,11 @@ ORDER BY id
 LIMIT $2
 OFFSET $3;
 
--- name: UpdateTodoTitleStatus :one
+-- name: UpdateTodo :one
 UPDATE todos
 SET title = COALESCE(sqlc.narg(title), title),
-    status = COALESCE(sqlc.narg(status), status)
+    status = COALESCE(sqlc.narg(status), status),
+    periodic_reminder_time_seconds = COALESCE(sqlc.narg(periodic_reminder_time_seconds), periodic_reminder_time_seconds)
 WHERE id = $1
 RETURNING *;
 

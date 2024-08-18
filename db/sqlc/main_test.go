@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 	// Run db migrations
 	runDBMigration("file://./../migration/", connURI)
 
-	testStore = NewStore(connPool)
+	testStore = NewSQLStore(connPool)
 
 	code := m.Run()
 	m.Run()

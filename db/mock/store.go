@@ -301,6 +301,21 @@ func (mr *MockStoreMockRecorder) ListTodos(arg0, arg1 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTodos", reflect.TypeOf((*MockStore)(nil).ListTodos), arg0, arg1)
 }
 
+// UpdateTodo mocks base method.
+func (m *MockStore) UpdateTodo(arg0 context.Context, arg1 db.UpdateTodoParams) (db.Todo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateTodo", arg0, arg1)
+	ret0, _ := ret[0].(db.Todo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateTodo indicates an expected call of UpdateTodo.
+func (mr *MockStoreMockRecorder) UpdateTodo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTodo", reflect.TypeOf((*MockStore)(nil).UpdateTodo), arg0, arg1)
+}
+
 // UpdateTodoFileCount mocks base method.
 func (m *MockStore) UpdateTodoFileCount(arg0 context.Context, arg1 db.UpdateTodoFileCountParams) (db.Todo, error) {
 	m.ctrl.T.Helper()
@@ -314,21 +329,6 @@ func (m *MockStore) UpdateTodoFileCount(arg0 context.Context, arg1 db.UpdateTodo
 func (mr *MockStoreMockRecorder) UpdateTodoFileCount(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTodoFileCount", reflect.TypeOf((*MockStore)(nil).UpdateTodoFileCount), arg0, arg1)
-}
-
-// UpdateTodoTitleStatus mocks base method.
-func (m *MockStore) UpdateTodoTitleStatus(arg0 context.Context, arg1 db.UpdateTodoTitleStatusParams) (db.Todo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateTodoTitleStatus", arg0, arg1)
-	ret0, _ := ret[0].(db.Todo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateTodoTitleStatus indicates an expected call of UpdateTodoTitleStatus.
-func (mr *MockStoreMockRecorder) UpdateTodoTitleStatus(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTodoTitleStatus", reflect.TypeOf((*MockStore)(nil).UpdateTodoTitleStatus), arg0, arg1)
 }
 
 // UpdateUser mocks base method.

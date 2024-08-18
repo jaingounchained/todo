@@ -1,13 +1,13 @@
 package util
 
 const (
-	complete   = "complete"
-	incomplete = "incomplete"
+	TodoStatusComplete   = "complete"
+	TodoStatusIncomplete = "incomplete"
 )
 
 func IsSupportedTodoStatus(todoStatus string) bool {
 	switch todoStatus {
-	case complete, incomplete:
+	case TodoStatusComplete, TodoStatusIncomplete:
 		return true
 	}
 
