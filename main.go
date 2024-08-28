@@ -348,5 +348,5 @@ func applicationShutdown(done <-chan os.Signal, httpServer *http.Server, connPoo
 		log.Error().Err(err).Msg("server forced to shutdown")
 	}
 
-	log.Info().Msg("server exiting...")
+					log.Info().Msg("server exiting...")
 }

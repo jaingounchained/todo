@@ -71,10 +71,15 @@ func (storage *LocalStorage) GetFileContents(ctx context.Context, todoID int64, 
 	}
 
 	return os.ReadFile(todoFilePath)
+
 }
 
 // TODO: optimize this function
-func (storage *LocalStorage) SaveMultipleFilesSafely(ctx context.Context, todoID int64, fileContents storage.FileContents) error {
+func (storage *LocalStorage) SaveMultipleFilesSafely(
+	ctx context.Context,
+	todoID int64,
+	fileContents storage.FileContents,
+) error {
 	todoDirectory := storage.todoAbsoluteDirectory(todoID)
 	if !util.DirExists(todoDirectory) {
 		return newLocalDirectoryForTodoDoesNotExistError(todoID)

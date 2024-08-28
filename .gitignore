@@ -5,3 +5,4 @@ test-files/*
 pg-data/*
 coverage.out
 tmp/*
+app.env
