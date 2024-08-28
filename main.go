@@ -37,6 +37,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// when logger.Fatal is called, defer sync is not called
+	// notifycontext -> ctx
+	// func process (ctx) -> err
+	// process all connections in this process later
 	defer logger.Sync()
 
 	logger.Info("Logger setup")

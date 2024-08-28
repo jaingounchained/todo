@@ -21,6 +21,8 @@ type Server struct {
 }
 
 // NewGinHandler creates a new HTTP server and setup routing
+// slog -> another potential logger
+// Central logger with context
 func NewGinHandler(store db.Store, storage storage.Storage, l *zap.Logger) *Server {
 	server := &Server{
 		store:   store,

@@ -201,6 +201,8 @@ func (server *Server) deleteTodo(ctx *gin.Context) {
 		return
 	}
 
+	// Think of the lag between read and write replica
+	// This will create an issue
 	todo := server.fetchTodoAndHandleErrors(ctx, req.TodoID)
 	if todo == nil {
 		return

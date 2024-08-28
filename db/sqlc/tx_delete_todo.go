@@ -19,6 +19,7 @@ func (store *SQLStore) DeleteTodoTx(ctx context.Context, arg DeleteTodoTxParams)
 		var err error
 
 		// Delete todo and corresponding attachment rows if present
+		// Check if the row count is 1 exactly rather than quering the read replica
 		err = q.DeleteTodo(ctx, arg.TodoID)
 		if err != nil {
 			return err
