@@ -1,0 +1,10 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+        name: {{ .Values.helm_cluster_role_ccca1b07446e4acbb2206f54f3aca8b5.name }}
+rules:
+{{- range $index, $rule  := .Values.helm_cluster_role_ccca1b07446e4acbb2206f54f3aca8b5.rules }}
+        - apiGroups : [{{ $rule.apiGroups }}]
+          resources : [{{ $rule.resources }}]
+          verbs : [{{ $rule.verbs }}]
+{{- end }}

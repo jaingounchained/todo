@@ -1,0 +1,6 @@
+helm_cluster_role_ccca1b07446e4acbb2206f54f3aca8b5:
+    name: asdf
+    rules:
+        - apiGroups: asdf
+          resources: asdf
+          verbs: asdf
