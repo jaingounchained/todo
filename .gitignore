@@ -1,7 +1,0 @@
-uploads/*
-todo
-.DS_STORE
-test-files/*
-pg-data/*
-coverage.out
-tmp/*
